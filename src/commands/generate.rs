@@ -1,5 +1,6 @@
-pub fn run() {
+pub fn run(abstraction: String, name: String) -> std::io::Result<()> {
     println!("run generate command here");
+    Ok(())
 }
 
 // extern crate tokio;
@@ -29,3 +30,4 @@ pub fn run() {
 //     });
 
 // tokio::run(task);
+// oo
