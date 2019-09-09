@@ -1,8 +1,7 @@
 use yansi::Paint;
 
 pub fn run() -> std::io::Result<()> {
-    // TODO: read and parse from Cargo.toml
-    let version = "0.1.0";
+    let version = "0.1.0"; // TODO: read and parse from Cargo.toml during compile time
 
     println!(
         "{} mber {}
@@ -18,5 +17,6 @@ mber delete | d [type] [name]      # Remove ember files for certain abstraction 
         Paint::green("[alias: \"mber s\"]"),
         Paint::green("(--server to run them in browser)")
     );
+
     Ok(())
 }

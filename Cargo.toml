@@ -10,5 +10,6 @@ edition = "2018"
 
 [dependencies]
 yansi = "0.5.0"
+hyper = "0.12.34"
 # tokio = "0.1.22"
 # tokio-fs = "0.1.6"

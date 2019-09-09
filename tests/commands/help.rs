@@ -1,16 +1,10 @@
-use std::process::Command;
+use super::super::helpers::mber;
 
 #[test]
 fn help_command_works() {
-    let command = Command::new("cargo")
-        .env("FORCE_COLOR", "0")
-        .arg("run")
-        .arg("help")
-        .output()
-        .expect("Failed to execute the process");
-    let stdout = String::from_utf8(command.stdout).unwrap();
+    let (stdout, output) = mber::spawn("help");
 
-    assert_eq!(command.status.success(), true);
+    assert_eq!(output.status.success(), true);
     assert_eq!(
         stdout.contains("unknown command. Available options are:"),
         false

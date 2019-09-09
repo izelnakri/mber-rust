@@ -1,16 +1,12 @@
-use std::process::Command;
-use yansi::Paint;
+mod helpers;
+
+use helpers::mber;
 
 #[test]
 fn default_command_works() {
-    let command = Command::new("cargo")
-        .env("FORCE_COLOR", "0")
-        .arg("run")
-        .output()
-        .expect("Failed to execute the process");
-    let stdout = String::from_utf8(command.stdout).unwrap();
+    let (stdout, output) = mber::spawn("");
 
-    assert_eq!(command.status.success(), true);
+    assert_eq!(output.status.success(), true);
     assert_eq!(
         stdout.contains("unknown command. Available options are:"),
         false
@@ -32,15 +28,9 @@ fn default_command_works() {
 
 #[test]
 fn test_invalid_command() {
-    let command = Command::new("cargo")
-        .env("FORCE_COLOR", "0")
-        .arg("run")
-        .arg("some_invalid_command")
-        .output()
-        .expect("Failed to execute the process");
-    let stdout = String::from_utf8(command.stdout).unwrap();
+    let (stdout, output) = mber::spawn("some_invalid_command");
 
-    assert_eq!(command.status.success(), false);
+    assert_eq!(output.status.success(), false);
     [
         "unknown command. Available options are:",
         "Usage: mber <command (Default: help)>",
