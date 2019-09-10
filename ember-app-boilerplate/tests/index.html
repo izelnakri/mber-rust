@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{{applicationName}} Tests</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="/assets/application.css">
+    <link rel="stylesheet" href="/assets/test-support.css">
+  </head>
+  <body style="margin: 0;">
+    <div id="qunit"></div>
+    <div id="qunit-fixture"></div>
+
+    <div id="ember-testing-container">
+      <div id="ember-testing"></div>
+    </div>
+
+    <script src="/assets/vendor.js"></script>
+    <script type="text/javascript">
+      document.addEventListener('keydown', function(event) {
+        event.keyCode === 80 ? document.querySelector('#qunit-abort-tests-button').click() : null;
+      });
+    </script>
+    <script src="/assets/test-support.js"></script>
+    <script src="/assets/application.js"></script>
+    <script src="/assets/tests.js"></script>
+  </body>
+</html>

@@ -1,0 +1,64 @@
+{
+  "dependencies": {},
+  "fastboot": {
+    "appName": "dummyapp",
+    "config": {
+      "dummyapp": {
+        "ember-resolver": {
+          "features": {
+            "EMBER_RESOLVER_MODULE_UNIFICATION": true
+          }
+        },
+        "modulePrefix": "dummyapp",
+        "environment": "demo",
+        "rootURL": "/",
+        "locationType": "auto",
+        "fastboot": {
+          "hostWhitelist": [
+            "^localhost:\\d+$"
+          ]
+        },
+        "ember-devtools": {
+          "global": true,
+          "enabled": false
+        },
+        "memserver": {
+          "minify": true,
+          "enabled": true
+        },
+        "EmberENV": {
+          "FEATURES": {
+            "ember-module-unification": true
+          },
+          "EXTEND_PROTOTYPES": {
+            "Date": false
+          }
+        },
+        "APP": {
+          "API_HOST": "http://localhost:3000",
+          "autoboot": false,
+          "name": "dummyapp",
+          "version": "0.0.0+578db4ce"
+        }
+      }
+    },
+    "hostWhitelist": [
+      "^localhost:\\d+$"
+    ],
+    "manifest": {
+      "appFiles": [
+        "assets/application-df0b6cbf528e46c0aa02b74f24252ffd.js",
+        "assets/memserver-zaza79265dd86542580d6f7cc296dac7"
+      ],
+      "htmlFile": "index.html",
+      "vendorFiles": [
+        "assets/vendor-339579265dd86542580d6f7cc296dac7.js"
+      ]
+    },
+    "moduleWhitelist": [
+      "node-fetch",
+      "abortcontroller-polyfill"
+    ],
+    "schemaVersion": 3
+  }
+}
