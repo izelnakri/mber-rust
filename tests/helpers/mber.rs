@@ -12,8 +12,11 @@ pub fn spawn(command_string: &str) -> (String, Output) {
     }
 
     let output = command.output().expect("Failed to execute the process");
+    let stdout = String::from_utf8(output.stdout.to_vec()).unwrap();
 
-    return (String::from_utf8(output.stdout.to_vec()).unwrap(), output);
+    println!("{:?}", stdout);
+
+    return (stdout, output);
 }
 
 // use std::path::Path;
