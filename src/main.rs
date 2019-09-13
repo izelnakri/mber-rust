@@ -1,4 +1,5 @@
 mod commands;
+mod utils;
 
 use std::io::{Error, ErrorKind, Result};
 use yansi::Paint;
