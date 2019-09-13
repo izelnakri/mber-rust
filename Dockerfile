@@ -5,10 +5,11 @@ RUN apt-get update && \
 
 WORKDIR /code/
 
+ADD ember-app-boilerplate /code/ember-app-boilerplate
+
 ADD Cargo.lock /code/Cargo.lock
 ADD Cargo.toml /code/Cargo.toml
 
-ADD ember-app-boilerplate /code/ember-app-boilerplate
 ADD src /code/src
 ADD tests /code/tests
 ADD . /code/

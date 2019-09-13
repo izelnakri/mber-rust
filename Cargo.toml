@@ -1,15 +1,28 @@
 [package]
-name = "mber"
-description = "rust rewrite of ember-cli"
-license = "MIT"
-license_file = "LICENSE.md"
-repository = "https://github.com/izelnakri/mber-rust"
 version = "0.1.1"
+name = "mber"
+build = "build.rs"
+description = "rust rewrite of ember-cli"
 authors = ["Izel Nakri <contact@izelnakri.com>"]
+keywords = ["cli", "ember", "javascript", "frontend", "ember-cli", "spa", "testing"]
+license = "MIT"
+repository = "https://github.com/izelnakri/mber-rust"
+readme = "https://github.com/izelnakri/mber-rust/blob/master/README.md"
 edition = "2018"
+
+[badges]
+circle-ci = { repository = "izelnakri/mber-rust", branch = "master" }
 
 [dependencies]
 yansi = "0.5.0"
+fs_extra = "1.1.0" # in future remove this
+walkdir = "2.2.9"
 hyper = "0.12.34"
+serde = "1.0.100"
+serde_json = "1.0.40"
 # tokio = "0.1.22"
 # tokio-fs = "0.1.6"
+
+[build-dependencies]
+walkdir = "2.2.9"
+toml = "0.5.3"
