@@ -1,16 +1,15 @@
 // cargo:rerun-if-changed=build.rs
-// extern crate serde;
-// extern crate serde_json;
-
 use core::str::Split;
-// use serde::ser::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
+use serde_json;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fs;
 use std::path::Display;
 use walkdir::WalkDir;
 
-#[derive(Debug)]
-// #[serde(untagged)]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
 enum KeyValue {
     String(String),
     RefCell(HashMap<String, KeyValue>),
@@ -37,16 +36,22 @@ fn main() {
         }
     }
 
-    // let serialized = serde_json::to_string(&file_system_map.into_inner()).unwrap();
-    // println!("serialized = {}", serialized);
+    let json_string = serde_json::to_string_pretty(&file_system_map).unwrap();
 
-    for (key, value) in file_system_map.into_inner().into_iter() {
-        println!("{}: {:?}", key, value);
-    }
+    fs::write(
+        "src/utils/ember_app_boilerplate.rs",
+        format!(
+            "pub fn as_string() -> &'static str {{
+    return r##\"\n{}\"##;
+
+    }}",
+            &json_string, // "{ \"users\": { \"name\": \"Izel\" } }"
+        ),
+    );
 }
 
 fn check_and_set_directory_map_to_map(
-    mut file_system_map: &mut RefCell<HashMap<String, KeyValue>>,
+    file_system_map: &mut RefCell<HashMap<String, KeyValue>>,
     path: Display,
 ) {
     let full_path = path.to_string();
@@ -55,93 +60,67 @@ fn check_and_set_directory_map_to_map(
     for (index, directory) in directories.clone().enumerate() {
         let mut mutable_file_system_map = file_system_map.borrow_mut();
 
-        match mutable_file_system_map.get(&String::from(directory)) {
-            None => {
-                // println!("{:?}", directory);
-                if directory == "ember-app-boilerplate" {
-                    mutable_file_system_map.insert(
-                        String::from("ember-app-boilerplate"),
-                        KeyValue::RefCell(HashMap::new()),
-                    );
-                    return;
-                }
-                // let mut mutable_file_system_map = file_system_map.borrow_mut();
-                let mut target_hash_map = get_from_directory_map_from_map(
-                    &mut mutable_file_system_map,
-                    &directories,
-                    index,
+        if let None = mutable_file_system_map.get(&String::from(directory)) {
+            if directory == "ember-app-boilerplate" {
+                mutable_file_system_map.insert(
+                    String::from("ember-app-boilerplate"),
+                    KeyValue::RefCell(HashMap::new()),
                 );
-
-                target_hash_map.insert(String::from(directory), KeyValue::RefCell(HashMap::new()))
             }
-            Some(_) => None,
+
+            let target_hash_map =
+                get_from_directory_map_from_map(&mut mutable_file_system_map, &directories, index);
+            target_hash_map
+                .entry(String::from(directory))
+                .or_insert(KeyValue::RefCell(HashMap::new()));
         };
     }
 }
 
 fn get_from_directory_map_from_map<'a>(
-    mut hashmap: &'a mut HashMap<String, KeyValue>,
+    hashmap: &'a mut HashMap<String, KeyValue>,
     directories_list: &Split<&str>,
     directory_index: usize,
 ) -> &'a mut HashMap<String, KeyValue> {
     let directory_list: Vec<&str> = directories_list.clone().collect::<Vec<_>>(); // NOTE: this is correct but optimize it!
 
-    println!("list count is {}", directory_list.len());
-
-    if ((directory_index) == directory_list.len()) {
-        // println!("RETURNS DIRECTLY FOR {:?} | {}", directory_list, directory_index);
-        // let mut reference = &hashmap;
-
+    if directory_index == 0 {
         return hashmap;
     }
 
-    // println!("BRANCH CALL FOR {:?}", directory_list);
-
-    println!("index is {}", directory_index);
-    println!("directory_list is {:?}", directory_list);
-    let target_directory_list = &directories_list.clone().take(directory_index);
-    println!(
-        "target_directory_list is {:?}",
-        target_directory_list
-            .clone()
-            .enumerate()
-            .collect::<Vec<_>>()
-    );
+    let target_directory_list = directory_list.get(0..directory_index).unwrap();
 
     // TODO: move this to a private util function:
-    let result = target_directory_list.clone().enumerate().fold(
+    return target_directory_list.clone().iter().enumerate().fold(
         hashmap,
-        |mut acc: &mut HashMap<String, KeyValue>,
-         (index, directory_name)|
+        |acc: &mut HashMap<String, KeyValue>,
+         (_index, directory_name)|
          -> &mut HashMap<String, KeyValue> {
-            // println!("index is {}, directory_name is {:?}", index, directory_name);
-            // let target_index = index || 1;
-
-            // NOTE: probably needs an improvement
-            let target_directory = target_directory_list.clone().nth(index).unwrap();
-            println!("target_directory is {:?}", &target_directory);
-            // .expect("nth element couldnt found");
-
-            // println!("target_directory is {:?}", target_directory);
-
-            match acc.get_mut(&target_directory.to_string()).unwrap() {
+            match acc.get_mut(*directory_name).unwrap() {
                 KeyValue::RefCell(something) => something,
-                _ => panic!("PANIC"),
+                _ => panic!(
+                    "{} must exist in the fs directory mapping in memory!",
+                    directory_name
+                ),
             }
         },
     );
-
-    return result;
-    // return hashmap;
 }
 
+// TODO: currently cant embed non-UTF-8 to json(png files etc)
 fn find_directory_map_and_insert_file(
     file_system_map: &mut RefCell<HashMap<String, KeyValue>>,
     path: Display,
 ) {
     let path_string = path.to_string();
-    // let mut target_hash_map = get_from_directory_map_from_map(&mut file_system_map,
+    let path_list = &path_string.split("/");
+    let file_name = &path_string.split("/").last().unwrap();
+    let contents =
+        fs::read_to_string(&path_string).expect(format!("couldnt read {}", path_string).as_str());
+    let mut full_map = file_system_map.borrow_mut();
+    let directory_path_index = &path_list.clone().count().wrapping_sub(1);
+    let target_hash_map =
+        get_from_directory_map_from_map(&mut full_map, &path_list, *directory_path_index);
 
-    // target_hash_map.
-    println!("path is {}", path_string);
+    target_hash_map.insert(file_name.to_string(), KeyValue::String(contents));
 }

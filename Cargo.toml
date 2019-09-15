@@ -1,5 +1,5 @@
 [package]
-version = "0.1.1"
+version = "0.1.2"
 name = "mber"
 build = "build.rs"
 description = "rust rewrite of ember-cli"
@@ -15,14 +15,17 @@ circle-ci = { repository = "izelnakri/mber-rust", branch = "master" }
 
 [dependencies]
 yansi = "0.5.0"
-fs_extra = "1.1.0" # in future remove this
 walkdir = "2.2.9"
 hyper = "0.12.34"
-serde = "1.0.100"
+serde = { version = "1.0.100", features = ["derive"] }
 serde_json = "1.0.40"
 # tokio = "0.1.22"
 # tokio-fs = "0.1.6"
+# fs_extra = "1.1.0" # in future remove this
 
 [build-dependencies]
 walkdir = "2.2.9"
 toml = "0.5.3"
+serde = { version = "1.0.100", features = ["derive"] }
+serde_json = "1.0.40"
+
