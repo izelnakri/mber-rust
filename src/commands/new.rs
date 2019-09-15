@@ -15,10 +15,8 @@ use yansi::Paint;
 enum KeyValue {
     String(String),
     RefCell(HashMap<String, KeyValue>),
-    None,
 }
 
-// TODO: probably run one of script to turn a directory into JSON "file_name": "content"
 pub fn run() -> std::io::Result<()> {
     let application_name = std::env::args().nth(2).unwrap_or_else(|| {
         println!("You forgot to include an application name! Example: mber init example-app");
@@ -31,32 +29,31 @@ pub fn run() -> std::io::Result<()> {
         .iter()
         .any(|folder| folder.to_str().unwrap() == application_name);
 
-    if user_has_the_app_in_path || user_has_app_in_current_directory(path, &application_name) {
-        println!("{} already exists!", application_name);
+    if user_has_the_app_in_path || user_has_app_in_current_directory(&path, &application_name) {
+        console::log(format!("{} already exists!", application_name));
 
         process::exit(1);
     }
 
     console::log(format!("creating {} application", application_name));
 
-    let fs_object: HashMap<String, KeyValue> =
+    let fs_hashmap: HashMap<String, KeyValue> =
         serde_json::from_str(ember_app_boilerplate::as_string()).unwrap();
 
-    let test_object = match fs_object.get("ember-app-boilerplate").unwrap() {
-        KeyValue::RefCell(a) => a,
-        _ => panic!("must exist in the fs directory mapping in memory!"),
-    };
-    let test_value = match test_object.get("index.js").unwrap() {
-        KeyValue::String(a) => a,
-        _ => panic!("must exist in the fs directory mapping in memory!"),
-    };
+    create_nested_directory_and_files_from_hashmap(
+        &fs_hashmap,
+        path.display().to_string(),
+        &application_name,
+    );
 
-    println!("{:?}", &test_value);
-
-    // TODO: copy ember-app-boilerplate, change environment.js, package.json, test.html
+    // TODO: change environment.js, package.json, test.html
     // write .gitignore
-    // await fs.copy(`${__dirname}/../../ember-app-boilerplate`, TARGET_DIRECTORY);
-    // TODO: also print them
+
+    if let KeyValue::RefCell(hashmap) = fs_hashmap.get("ember-app-boilerplate").unwrap() {
+        for (key, _value) in hashmap {
+            println!("{} {}", Paint::green("created"), key);
+        }
+    }
 
     console::log(Paint::green(format!(
         "{} ember application created. Next is to do:",
@@ -66,10 +63,44 @@ pub fn run() -> std::io::Result<()> {
 
     Ok(())
 }
-// NOTE: in future also needs one line change to main.js
 
-fn user_has_app_in_current_directory(path: PathBuf, application_name: &str) -> bool {
+// NOTE: in future also needs one line change to main.js?
+
+fn user_has_app_in_current_directory(path: &PathBuf, application_name: &str) -> bool {
     return fs::read_dir(path)
         .unwrap()
         .any(|element| element.unwrap().file_name() == application_name);
+}
+
+fn create_nested_directory_and_files_from_hashmap(
+    fs_hashmap: &HashMap<String, KeyValue>,
+    current_directory: String,
+    application_name: &String,
+) {
+    for (file_or_directory_name, value) in fs_hashmap {
+        let target_path = if &file_or_directory_name.as_str() == &"ember-app-boilerplate" {
+            format!("{}/{}", &current_directory, &application_name).to_string()
+        } else {
+            format!("{}/{}", &current_directory, &file_or_directory_name).to_string()
+        };
+
+        match value {
+            KeyValue::String(content) => {
+                fs::write(&target_path, content)
+                    .expect(format!("couldnt write to {}", target_path).as_str());
+                ();
+            }
+            KeyValue::RefCell(directory_map) => {
+                fs::create_dir(&target_path)
+                    .expect(format!("couldnt create dir! {}", target_path).as_str());
+                create_nested_directory_and_files_from_hashmap(
+                    &directory_map,
+                    target_path,
+                    application_name,
+                )
+            }
+        }
+    }
+
+    return ();
 }
