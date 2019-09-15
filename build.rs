@@ -13,7 +13,6 @@ use walkdir::WalkDir;
 enum KeyValue {
     String(String),
     RefCell(HashMap<String, KeyValue>),
-    None,
 }
 
 fn main() {
@@ -36,18 +35,16 @@ fn main() {
         }
     }
 
-    let json_string = serde_json::to_string_pretty(&file_system_map).unwrap();
+    let json_string = serde_json::to_string(&file_system_map).unwrap();
 
     fs::write(
         "src/utils/ember_app_boilerplate.rs",
         format!(
-            "pub fn as_string() -> &'static str {{
-    return r##\"\n{}\"##;
-
-    }}",
-            &json_string, // "{ \"users\": { \"name\": \"Izel\" } }"
+            "pub fn as_string() -> &'static str {{\nreturn r##\"\n{}\"##;\n}}",
+            &json_string
         ),
-    );
+    )
+    .expect("couldnt write to src/utils/ember_app_boilerplate.rs");
 }
 
 fn check_and_set_directory_map_to_map(
@@ -61,13 +58,6 @@ fn check_and_set_directory_map_to_map(
         let mut mutable_file_system_map = file_system_map.borrow_mut();
 
         if let None = mutable_file_system_map.get(&String::from(directory)) {
-            if directory == "ember-app-boilerplate" {
-                mutable_file_system_map.insert(
-                    String::from("ember-app-boilerplate"),
-                    KeyValue::RefCell(HashMap::new()),
-                );
-            }
-
             let target_hash_map =
                 get_from_directory_map_from_map(&mut mutable_file_system_map, &directories, index);
             target_hash_map
@@ -83,15 +73,10 @@ fn get_from_directory_map_from_map<'a>(
     directory_index: usize,
 ) -> &'a mut HashMap<String, KeyValue> {
     let directory_list: Vec<&str> = directories_list.clone().collect::<Vec<_>>(); // NOTE: this is correct but optimize it!
-
-    if directory_index == 0 {
-        return hashmap;
-    }
-
     let target_directory_list = directory_list.get(0..directory_index).unwrap();
 
     // TODO: move this to a private util function:
-    return target_directory_list.clone().iter().enumerate().fold(
+    return target_directory_list.iter().enumerate().fold(
         hashmap,
         |acc: &mut HashMap<String, KeyValue>,
          (_index, directory_name)|

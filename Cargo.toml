@@ -4,10 +4,10 @@ name = "mber"
 build = "build.rs"
 description = "rust rewrite of ember-cli"
 authors = ["Izel Nakri <contact@izelnakri.com>"]
-keywords = ["cli", "ember", "javascript", "frontend", "ember-cli", "spa", "testing"]
+keywords = ["cli", "ember-cli", "javascript", "frontend", "testing"]
 license = "MIT"
 repository = "https://github.com/izelnakri/mber-rust"
-readme = "https://github.com/izelnakri/mber-rust/blob/master/README.md"
+readme = "README.md"
 edition = "2018"
 
 [badges]
