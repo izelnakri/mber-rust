@@ -1,6 +1,7 @@
 // TODO: rewrite this in tokio
 use super::super::utils::console;
 use super::super::utils::ember_app_boilerplate;
+use mustache::MapBuilder;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::collections::HashMap;
@@ -37,17 +38,18 @@ pub fn run() -> std::io::Result<()> {
 
     console::log(format!("creating {} application", application_name));
 
+    let current_directory = path.display().to_string();
+    let application_directory = format!("{}/{}", &current_directory, &application_name);
     let fs_hashmap: HashMap<String, KeyValue> =
         serde_json::from_str(ember_app_boilerplate::as_string()).unwrap();
 
     create_nested_directory_and_files_from_hashmap(
         &fs_hashmap,
-        path.display().to_string(),
+        current_directory,
         &application_name,
     );
 
-    // TODO: change environment.js, package.json, test.html
-    // write .gitignore
+    add_application_name_to_boilerplate_files(application_directory, &application_name)?;
 
     if let KeyValue::RefCell(hashmap) = fs_hashmap.get("ember-app-boilerplate").unwrap() {
         for (key, _value) in hashmap {
@@ -63,8 +65,6 @@ pub fn run() -> std::io::Result<()> {
 
     Ok(())
 }
-
-// NOTE: in future also needs one line change to main.js?
 
 fn user_has_app_in_current_directory(path: &PathBuf, application_name: &str) -> bool {
     return fs::read_dir(path)
@@ -103,4 +103,53 @@ fn create_nested_directory_and_files_from_hashmap(
     }
 
     return ();
+}
+
+fn add_application_name_to_boilerplate_files(
+    application_directory: String,
+    application_name: &String,
+) -> std::io::Result<()> {
+    let application_name = application_name.as_str();
+    add_application_data_to_file(
+        format!("{}/config/environment.js", &application_directory),
+        &application_name,
+    )
+    .unwrap();
+    add_application_data_to_file(
+        format!("{}/package.json", &application_directory),
+        &application_name,
+    )
+    .unwrap();
+    add_application_data_to_file(
+        format!("{}/tests/index.html", &application_directory),
+        &application_name,
+    )
+    .unwrap();
+
+    fs::write(
+        format!("{}/.gitinote", &application_directory),
+        format!(
+            "{}\n{}\n{}\n{}\n{}\n{}",
+            ".cache", "dist", "node_modules", "npm-debug.log*", "yarn-error.log", "tmp"
+        ),
+    )?;
+
+    return Ok(());
+}
+
+fn add_application_data_to_file(
+    file_path: String,
+    application_name: &str,
+) -> Result<(), std::io::Error> {
+    let application_data = MapBuilder::new()
+        .insert_str("applicationName", application_name)
+        .build();
+    let file_template = mustache::compile_path(&file_path).unwrap();
+
+    return fs::write(
+        file_path,
+        file_template
+            .render_data_to_string(&application_data)
+            .unwrap(),
+    );
 }
