@@ -1,7 +1,7 @@
 use yansi::Paint;
 
 pub fn run() -> std::io::Result<()> {
-    let version = "0.1.0"; // TODO: read and parse from Cargo.toml during compile time
+    let version = "0.1.2";
 
     println!(
         "{} mber {}

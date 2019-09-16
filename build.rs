@@ -5,6 +5,7 @@ use serde_json;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
+use std::io::Result;
 use std::path::Display;
 use walkdir::WalkDir;
 
@@ -15,10 +16,42 @@ enum KeyValue {
     RefCell(HashMap<String, KeyValue>),
 }
 
-fn main() {
-    // TODO: inject version to the help
+#[derive(Deserialize)]
+struct CargoTOML {
+    package: CargoPackage,
+}
 
-    // TODO: create { file to filename } to src/utils/new-ember-app-boilerplate-json.rb
+#[derive(Deserialize)]
+struct CargoPackage {
+    version: String,
+}
+
+fn main() -> Result<()> {
+    update_help_command_with_version_from_cargo()?;
+    return inject_fs_hashmap_to_binary_source_code();
+}
+
+fn update_help_command_with_version_from_cargo() -> Result<()> {
+    let package_details: CargoTOML =
+        toml::from_str(fs::read_to_string("Cargo.toml").unwrap().as_str()).unwrap();
+    let mber_version = package_details.package.version;
+    let help_code = fs::read_to_string("src/commands/help.rs").unwrap();
+    let help_code_version_line = help_code
+        .lines()
+        .find(|line| line.trim_start().starts_with("let version ="))
+        .expect("cant find version line!")
+        .trim();
+
+    return fs::write(
+        "src/commands/help.rs",
+        help_code.replace(
+            help_code_version_line,
+            format!("let version = \"{}\";", mber_version).as_str(),
+        ),
+    );
+}
+
+fn inject_fs_hashmap_to_binary_source_code() -> Result<()> {
     let walker = WalkDir::new("ember-app-boilerplate").into_iter();
     let mut file_system_map: RefCell<HashMap<String, KeyValue>> = RefCell::new(HashMap::new());
 
@@ -37,14 +70,13 @@ fn main() {
 
     let json_string = serde_json::to_string(&file_system_map).unwrap();
 
-    fs::write(
+    return fs::write(
         "src/utils/ember_app_boilerplate.rs",
         format!(
             "pub fn as_string() -> &'static str {{\nreturn r##\"\n{}\"##;\n}}",
-            &json_string
+            json_string
         ),
-    )
-    .expect("couldnt write to src/utils/ember_app_boilerplate.rs");
+    );
 }
 
 fn check_and_set_directory_map_to_map(
@@ -75,7 +107,6 @@ fn get_from_directory_map_from_map<'a>(
     let directory_list: Vec<&str> = directories_list.clone().collect::<Vec<_>>(); // NOTE: this is correct but optimize it!
     let target_directory_list = directory_list.get(0..directory_index).unwrap();
 
-    // TODO: move this to a private util function:
     return target_directory_list.iter().enumerate().fold(
         hashmap,
         |acc: &mut HashMap<String, KeyValue>,
@@ -98,12 +129,12 @@ fn find_directory_map_and_insert_file(
     path: Display,
 ) {
     let path_string = path.to_string();
-    let path_list = &path_string.split("/");
     let file_name = &path_string.split("/").last().unwrap();
+    let path_list = &path_string.split("/");
+    let directory_path_index = &path_list.clone().count().wrapping_sub(1);
     let contents =
         fs::read_to_string(&path_string).expect(format!("couldnt read {}", path_string).as_str());
     let mut full_map = file_system_map.borrow_mut();
-    let directory_path_index = &path_list.clone().count().wrapping_sub(1);
     let target_hash_map =
         get_from_directory_map_from_map(&mut full_map, &path_list, *directory_path_index);
 
