@@ -127,7 +127,7 @@ fn add_application_name_to_boilerplate_files(
     .unwrap();
 
     fs::write(
-        format!("{}/.gitinote", &application_directory),
+        format!("{}/.gitignore", &application_directory),
         format!(
             "{}\n{}\n{}\n{}\n{}\n{}",
             ".cache", "dist", "node_modules", "npm-debug.log*", "yarn-error.log", "tmp"

@@ -54,26 +54,28 @@ fn new_command_gives_error_when_app_exists() -> io::Result<()> {
     assert_eq!(output.status.success(), true);
     assert_eq!(stdout.contains("ember creating somethingapp"), true);
 
-    // [
-    //     ".dockerignore",
-    //     ".editorconfig",
-    //     ".eslintrc.js",
-    //     ".gitignore",
-    //     "config",
-    //     "index.html",
-    //     "package.json",
-    //     "public",
-    //     "src",
-    //     "tests",
-    //     "tmp",
-    //     "vendor",
-    // ]
-    // .iter()
-    // .for_each(|file_or_folder| {
-    //     assert_eq!(stdout.contains(format!("created {}", file_or_folder).as_str()))
-    // });
+    [
+        ".dockerignore",
+        ".editorconfig",
+        ".eslintrc.js",
+        "config",
+        "index.html",
+        "package.json",
+        "public",
+        "src",
+        "tests",
+        "tmp",
+        "vendor",
+    ]
+    .iter()
+    .for_each(|file_or_folder| {
+        println!("{}", file_or_folder);
+        assert_eq!(
+            stdout.contains(format!("created {}", file_or_folder).as_str()),
+            true
+        );
+    });
 
-    assert_eq!(stdout.contains("ember creating somethingapp"), true);
     assert_eq!(
         stdout.contains("ember somethingapp ember application created. Next is to do:"),
         true
@@ -83,19 +85,34 @@ fn new_command_gives_error_when_app_exists() -> io::Result<()> {
         true
     );
 
-    let current_dir = env::current_dir()?;
+    let directory_entries: Vec<String> = fs::read_dir("somethingapp")
+        .unwrap()
+        .map(|x| x.unwrap().file_name().into_string().unwrap())
+        .collect();
 
-    // const directoryEntries = await fs.readdir('anotherapp');
-
-    // [
-    //     '.dockerignore', '.editorconfig', '.eslintrc.js', '.gitignore', 'config', 'index.html',
-    //     'package.json', 'public', 'src', 'tests', 'tmp', 'vendor'
-    // ].forEach((entry) => t.true(directoryEntries.includes(entry)));
+    [
+        ".dockerignore",
+        ".editorconfig",
+        ".eslintrc.js",
+        ".gitignore",
+        "config",
+        "index.html",
+        "package.json",
+        "public",
+        "src",
+        "tests",
+        "tmp",
+        "vendor",
+    ]
+    .iter()
+    .for_each(|file_or_folder| {
+        assert_eq!(
+            *&directory_entries
+                .iter()
+                .any(|entry| entry == file_or_folder),
+            true
+        )
+    });
 
     Ok(())
 }
-
-// #[test]
-// fn new_command_works() {
-//     let (stdout, output) = mber::spawn("new dummyapp");
-// }
