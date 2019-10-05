@@ -7,11 +7,11 @@ use std::io;
 
 fn setup() -> io::Result<()> {
     if fs::metadata("dummyapp").is_ok() {
-        fs::remove_dir("dummyapp")?;
+        fs::remove_dir_all("dummyapp")?;
     }
 
     if fs::metadata("somethingapp").is_ok() {
-        fs::remove_dir("somethingapp")?;
+        fs::remove_dir_all("somethingapp")?;
     }
 
     Ok(())
@@ -113,6 +113,9 @@ fn new_command_gives_error_when_app_exists() -> io::Result<()> {
             true
         )
     });
+
+    fs::remove_dir_all("dummyapp")?;
+    fs::remove_dir_all("somethingapp")?;
 
     Ok(())
 }

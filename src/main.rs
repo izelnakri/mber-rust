@@ -1,5 +1,6 @@
 mod commands;
 mod utils;
+mod generators;
 
 use std::io::{Error, ErrorKind, Result};
 use yansi::Paint;
@@ -18,22 +19,8 @@ fn main() -> Result<()> {
             "console" | "c" => commands::console::run(),
             "help" | "h" => commands::help::run(),
             "init" | "new" => commands::new::run(),
-            "generate" | "g" | "create" => {
-                let abstraction = std::env::args()
-                    .nth(3)
-                    .expect("You should provide an ember abstraction");
-                let name = std::env::args().nth(4).unwrap();
-
-                return commands::generate::run(abstraction, name);
-            }
-            "delete" | "d" | "destroy" => {
-                let abstraction = std::env::args()
-                    .nth(3)
-                    .expect("You should provide an ember abstraction");
-                let name = std::env::args().nth(4).unwrap();
-
-                return commands::destroy::run(abstraction, name);
-            }
+            "generate" | "g" | "create" => commands::generate::run(),
+            "delete" | "d" | "destroy" => commands::delete::run(),
             _ => {
                 println!("{}", Paint::red("unknown command. Available options are:"));
 

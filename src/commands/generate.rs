@@ -1,5 +1,53 @@
-pub fn run(abstraction: String, name: String) -> std::io::Result<()> {
-    println!("run generate command here");
+use super::super::utils::console;
+use std::process;
+
+// use super::super::generators::{component, helper, initializer, instance_initializer, mixin, model, route, service, util};
+// use super::super::generators::helper;
+// use super::super::generators::initializer;
+// use super::super::generators::instance_initializer;
+// use super::super::generators::mixin;
+// use super::super::generators::model;
+// use super::super::generators::route;
+// use super::super::generators::service;
+// use super::super::generators::util;
+
+pub fn run() -> std::io::Result<()> {
+    let abstraction = std::env::args()
+        .nth(2)
+        .unwrap_or_else(|| {
+            console::error("mber g missing an ember abstraction to generate!");
+
+            process::exit(1);
+        });
+    let ember_abstractions = vec!["component", "helper", "initializer", "instance-initializer", "mixin", "model", "route", "service", "util"];
+
+    if !ember_abstractions.contains(&abstraction.as_str()) {
+        console::error(format!("{} is not a valid ember abstraction to generate. Choose one of these abstractions:", abstraction));
+        println!("{:?}", ember_abstractions);
+
+        process::exit(1);
+    }
+
+    let _name = std::env::args().nth(3)
+        .unwrap_or_else(|| {
+            console::error(format!("mber g {} missing a name to generate!", abstraction));
+
+            process::exit(1);
+        });
+
+
+    // match abstraction {
+    //     "component" => component::generate(name),
+    //     "helper" => helper::generate(name),
+    //     "initializer" => initializer::generate(name),
+    //     "instance_initializer" => instance_initializer::generate(name),
+    //     "mixin" => mixin::generate(name),
+    //     "model" => model::generate(name),
+    //     "route" => route::generate(name),
+    //     "service" => service::generate(name),
+    //     "util" => util::generate(name)
+    // }`
+
     Ok(())
 }
 
