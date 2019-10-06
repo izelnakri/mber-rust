@@ -2,7 +2,7 @@
 use std::str::FromStr;
 use std::path::{Path, PathBuf};
 
-pub fn search_in_parent_directories(starting_directory: &Path, target_file_with_extension: &str) -> Option<PathBuf> {
+pub fn in_parent_directories(starting_directory: &Path, target_file_with_extension: &str) -> Option<PathBuf> {
     let target_path = PathBuf::from_str(format!("{}/{}", starting_directory.to_str().unwrap(), target_file_with_extension).as_str()).unwrap();
 
     return search_in_directory(target_path, &target_file_with_extension);
@@ -49,7 +49,7 @@ mod tests {
         setup();
 
         let target_dir = Path::new("online-shop/shoes");
-        let content = String::from_utf8(fs::read(search_in_parent_directories(target_dir, "shoe.js").unwrap())?).unwrap();
+        let content = String::from_utf8(fs::read(in_parent_directories(target_dir, "shoe.js").unwrap())?).unwrap();
 
         assert_eq!(content, String::from("// find me in online-shop/shoes/shoe.js"));
 
@@ -63,7 +63,7 @@ mod tests {
         setup();
 
         let target_dir = Path::new("online-shop/shoes");
-        let content = String::from_utf8(fs::read(search_in_parent_directories(target_dir, "details.js").unwrap())?).unwrap();
+        let content = String::from_utf8(fs::read(in_parent_directories(target_dir, "details.js").unwrap())?).unwrap();
 
         assert_eq!(content, String::from("// find me in online-shop/details.js"));
 
@@ -77,7 +77,7 @@ mod tests {
         setup();
 
         let target_dir = Path::new("online-shop/shoes/shoe");
-        let content = String::from_utf8(fs::read(search_in_parent_directories(target_dir, "details.js").unwrap())?).unwrap();
+        let content = String::from_utf8(fs::read(in_parent_directories(target_dir, "details.js").unwrap())?).unwrap();
 
         assert_eq!(content, String::from("// find me in online-shop/details.js"));
 
@@ -91,7 +91,7 @@ mod tests {
         setup();
 
         let target_dir = Path::new("online-shop/shoes");
-        let content = String::from_utf8(fs::read(search_in_parent_directories(target_dir, "index.js").unwrap())?).unwrap();
+        let content = String::from_utf8(fs::read(in_parent_directories(target_dir, "index.js").unwrap())?).unwrap();
 
         assert_eq!(content, String::from("// find me in online-shop/shoes/index.js"));
 
@@ -105,9 +105,8 @@ mod tests {
         setup();
 
         let target_dir = Path::new("online-shop/shoes");
-        let content = search_in_parent_directories(target_dir, "lol.js");
 
-        assert_eq!(search_in_parent_directories(target_dir, "lol.js").is_none(), true);
+        assert_eq!(in_parent_directories(target_dir, "lol.js").is_none(), true);
 
         fs::remove_dir_all("online-shop");
 
