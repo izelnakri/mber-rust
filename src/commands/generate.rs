@@ -1,15 +1,7 @@
 use super::super::utils::console;
 use std::process;
 
-// use super::super::generators::{component, helper, initializer, instance_initializer, mixin, model, route, service, util};
-// use super::super::generators::helper;
-// use super::super::generators::initializer;
-// use super::super::generators::instance_initializer;
-// use super::super::generators::mixin;
-// use super::super::generators::model;
-// use super::super::generators::route;
-// use super::super::generators::service;
-// use super::super::generators::util;
+use super::super::generators::{component};
 
 pub fn run() -> std::io::Result<()> {
     let abstraction = std::env::args()
@@ -28,16 +20,15 @@ pub fn run() -> std::io::Result<()> {
         process::exit(1);
     }
 
-    let _name = std::env::args().nth(3)
+    let name = std::env::args().nth(3)
         .unwrap_or_else(|| {
             console::error(format!("mber g {} missing a name to generate!", abstraction));
 
             process::exit(1);
         });
 
-
-    // match abstraction {
-    //     "component" => component::generate(name),
+    match abstraction.as_str() {
+        "component" => component::generate(name, "something"),
     //     "helper" => helper::generate(name),
     //     "initializer" => initializer::generate(name),
     //     "instance_initializer" => instance_initializer::generate(name),
@@ -45,8 +36,9 @@ pub fn run() -> std::io::Result<()> {
     //     "model" => model::generate(name),
     //     "route" => route::generate(name),
     //     "service" => service::generate(name),
-    //     "util" => util::generate(name)
-    // }`
+    //     "util" => util::generate(name),
+        _ => ()
+    }
 
     Ok(())
 }
