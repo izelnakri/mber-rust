@@ -1,21 +1,43 @@
 use std::path::PathBuf;
+use std::io;
+use std::fs;
 use std::env;
+use std::process;
+use yansi::Paint;
 
 pub mod console;
 pub mod ember_app_boilerplate;
 pub mod search;
 
 pub fn find_project_root() -> PathBuf {
-    let mut path = search::in_parent_directories(&env::current_dir().unwrap(), "package.json").unwrap();
+    let mut path = search::in_parent_directories(&env::current_dir().unwrap(), "package.json").unwrap_or_else(|| {
+        console::error("you are not on a frontend project! Change your directory");
+
+        process::exit(1);
+    });
 
     path.pop();
 
     return path;
 }
 
-// pub fn write_file_if_not_exists() { // TODO: check if there is std alternative
+pub fn write_file_if_not_exists(file_path: String, content: &str, project_root: &PathBuf) -> io::Result<()> { // TODO: add Future
+    if fs::metadata(&file_path).is_ok() {
+        console::log(format!("{} {}", Paint::yellow("not changed"), humanize_path(file_path, project_root)));
 
-// }
+        return Ok(());
+    }
+
+    let result = fs::write(&file_path, content);
+
+    console::log(format!("{} {}", Paint::green("created"), humanize_path(file_path, project_root)));
+
+    return result;
+}
+
+fn humanize_path(file_path: String, project_root: &PathBuf) -> String {
+    return file_path.replace(project_root.to_str().unwrap(), "");
+}
 
 #[cfg(test)]
 mod tests {

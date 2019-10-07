@@ -28,7 +28,7 @@ pub fn run() -> std::io::Result<()> {
         });
 
     match abstraction.as_str() {
-        "component" => component::generate(name, "something"),
+        "component" => component::generate(name, "something")?,
     //     "helper" => helper::generate(name),
     //     "initializer" => initializer::generate(name),
     //     "instance_initializer" => instance_initializer::generate(name),

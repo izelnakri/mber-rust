@@ -1,5 +1,5 @@
 mod commands;
-mod utils;
+pub mod utils;
 mod generators;
 
 use std::io::{Error, ErrorKind, Result};

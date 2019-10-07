@@ -1,7 +1,6 @@
 use std::io;
 use std::fs;
 use super::super::utils;
-use super::super::utils::console;
 
 const COMPONENT_CODE: &str = "import Component from '@ember/component';
 
@@ -9,19 +8,19 @@ export default Component.extend({{
 }});
 ";
 
-pub fn generate(input_name: String, application_name: &str) {
+pub fn generate(input_name: String, application_name: &str) -> io::Result<()> {
     let project_root = utils::find_project_root();
     let target_folder = format!("{}/src/ui/components/{}", project_root.to_string_lossy(), input_name);
 
-    fs::create_dir_all(&target_folder);
-    utils::write_file_if_not_exists(format!("{}/component.js", target_folder), COMPONENT_CODE, &project_root);
-    utils::write_file_if_not_exists(format!("{}/template.hbs", target_folder), "{{yield}}", &project_root);
-    utils::write_file_if_not_exists(format!("{}/styles.scss", target_folder), "", &project_root);
+    fs::create_dir_all(&target_folder)?;
+    utils::write_file_if_not_exists(format!("{}/component.js", target_folder), COMPONENT_CODE, &project_root)?;
+    utils::write_file_if_not_exists(format!("{}/template.hbs", target_folder), "{{yield}}", &project_root)?;
+    utils::write_file_if_not_exists(format!("{}/styles.scss", target_folder), "", &project_root)?;
     utils::write_file_if_not_exists(
         format!("{}/integration-test.js", target_folder),
         get_integration_test_code(input_name, application_name).as_str(),
         &project_root
-    );
+    )
 }
 
 fn get_integration_test_code(input_name: String, application_name: &str) -> String {

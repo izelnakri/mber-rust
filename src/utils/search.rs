@@ -23,25 +23,26 @@ fn search_in_directory(mut path: PathBuf, target_file_with_extension: &str) -> O
 #[cfg(test)]
 mod tests {
     use std::io;
-    use std::env;
     use std::fs;
     use super::*;
 
-    fn setup() {
+    fn setup() -> io::Result<()> {
         if fs::metadata("online-shop").is_ok() {
             fs::remove_dir_all("online-shop");
         }
 
-        fs::create_dir("online-shop");
-        fs::create_dir("online-shop/shoes");
-        fs::create_dir("online-shop/shirts");
-        fs::create_dir("online-shop/shoes/shoe");
-        fs::write("online-shop/index.js", "// find me in online-shop/index.js");
-        fs::write("online-shop/details.js", "// find me in online-shop/details.js");
-        fs::write("online-shop/shoes/shoe.js", "// find me in online-shop/shoes/shoe.js");
-        fs::write("online-shop/shoes/index.js", "// find me in online-shop/shoes/index.js");
-        fs::write("online-shop/shoes/brown.js", "// find me in online-shop/shoes/brown.js");
-        fs::write("online-shop/shoes/shoe/brown.js", "// find me in online-shop/shoes/shoe/brown.js");
+        fs::create_dir("online-shop")?;
+        fs::create_dir("online-shop/shoes")?;
+        fs::create_dir("online-shop/shirts")?;
+        fs::create_dir("online-shop/shoes/shoe")?;
+        fs::write("online-shop/index.js", "// find me in online-shop/index.js")?;
+        fs::write("online-shop/details.js", "// find me in online-shop/details.js")?;
+        fs::write("online-shop/shoes/shoe.js", "// find me in online-shop/shoes/shoe.js")?;
+        fs::write("online-shop/shoes/index.js", "// find me in online-shop/shoes/index.js")?;
+        fs::write("online-shop/shoes/brown.js", "// find me in online-shop/shoes/brown.js")?;
+        fs::write("online-shop/shoes/shoe/brown.js", "// find me in online-shop/shoes/shoe/brown.js")?;
+
+        Ok(())
     }
 
     #[test]
