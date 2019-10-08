@@ -10,8 +10,8 @@ export default Route.extend({
 });";
 
 pub fn generate(input_name: String, application_name: &str, project_root: PathBuf) -> io::Result<()> {
-    let file_name = to_snake_case(&input_name).replace("_", "-");
-    let target_folder = format!("{}/src/ui/routes/{}", project_root.to_str().unwrap(), file_name);
+    let folder_name = to_snake_case(&input_name).replace("_", "-");
+    let target_folder = format!("{}/src/ui/routes/{}", project_root.to_str().unwrap(), folder_name);
 
     fs::create_dir_all(&target_folder)?;
     utils::write_file_if_not_exists(format!("{}/route.js", &target_folder), ROUTE_CODE, &project_root)?;
@@ -19,18 +19,18 @@ pub fn generate(input_name: String, application_name: &str, project_root: PathBu
     utils::write_file_if_not_exists(format!("{}/styles.scss", &target_folder), "", &project_root)?;
     utils::write_file_if_not_exists(
         format!("{}/acceptance-test.js", &target_folder),
-        get_acceptance_test_code(file_name.clone(), application_name).as_str(),
+        get_acceptance_test_code(folder_name.clone(), application_name).as_str(),
         &project_root
     )?;
 
     return utils::write_file_if_not_exists(
         format!("{}/unit-test.js", &target_folder),
-        get_unit_test_code(file_name, application_name).as_str(),
+        get_unit_test_code(folder_name, application_name).as_str(),
         &project_root
     );
 }
 
-fn get_acceptance_test_code(file_name: String, application_name: &str) -> String {
+fn get_acceptance_test_code(folder_name: String, application_name: &str) -> String {
   return format!("import {{ module, test }} from 'qunit';
 import {{ visit, currentURL }} from '@ember/test-helpers';
 import {{ setupApplicationTest }} from '{}/tests/helpers';
@@ -43,10 +43,10 @@ module('Acceptance | {}', function(hooks) {{
   //
   //   assert.equal(currentURL(), '/route');
   // }});
-}});", application_name, file_name);
+}});", application_name, folder_name);
 }
 
-fn get_unit_test_code(file_name: String, application_name: &str) -> String {
+fn get_unit_test_code(folder_name: String, application_name: &str) -> String {
   return format!("import {{ module, test }} from 'qunit';
 import {{ setupTest }} from '{}/tests/helpers';
 
@@ -58,5 +58,5 @@ module('Unit | Route | {}', function(hooks) {{
 
     assert.ok(route);
   }});
-}});", application_name, file_name, file_name);
+}});", application_name, folder_name, folder_name);
 }
