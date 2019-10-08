@@ -1,5 +1,5 @@
 [package]
-version = "0.1.3"
+version = "0.1.4"
 name = "mber"
 build = "build.rs"
 description = "rust rewrite of ember-cli"
