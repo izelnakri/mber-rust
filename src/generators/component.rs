@@ -1,15 +1,14 @@
 use std::io;
 use std::fs;
+use std::path::PathBuf;
 use super::super::utils;
 
-const COMPONENT_CODE: &str = "import Component from '@ember/component';
+const COMPONENT_CODE: &'static str = "import Component from '@ember/component';
 
-export default Component.extend({{
-}});
-";
+export default Component.extend({
+});";
 
-pub fn generate(input_name: String, application_name: &str) -> io::Result<()> {
-    let project_root = utils::find_project_root();
+pub fn generate(input_name: String, application_name: &str, project_root: PathBuf) -> io::Result<()> {
     let target_folder = format!("{}/src/ui/components/{}", project_root.to_string_lossy(), input_name);
 
     fs::create_dir_all(&target_folder)?;

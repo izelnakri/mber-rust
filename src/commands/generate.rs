@@ -1,7 +1,10 @@
+// TODO: get application_name from project.json
+// TODO: singularize/format the input_string
+use super::super::utils;
 use super::super::utils::console;
 use std::process;
 
-use super::super::generators::{component};
+use super::super::generators::{component, helper, initializer, instance_initializer, mixin, model, route, service, util};
 
 pub fn run() -> std::io::Result<()> {
     let abstraction = std::env::args()
@@ -11,7 +14,9 @@ pub fn run() -> std::io::Result<()> {
 
             process::exit(1);
         });
-    let ember_abstractions = vec!["component", "helper", "initializer", "instance-initializer", "mixin", "model", "route", "service", "util"];
+    let ember_abstractions = vec![
+        "component", "helper", "initializer", "instance-initializer", "mixin", "model", "route", "service", "util"
+    ];
 
     if !ember_abstractions.contains(&abstraction.as_str()) {
         console::error(format!("{} is not a valid ember abstraction to generate. Choose one of these abstractions:", abstraction));
@@ -26,17 +31,19 @@ pub fn run() -> std::io::Result<()> {
 
             process::exit(1);
         });
+    let project_root = utils::find_project_root();
+    // TODO: get application_name from project.json
 
     match abstraction.as_str() {
-        "component" => component::generate(name, "something")?,
-    //     "helper" => helper::generate(name),
-    //     "initializer" => initializer::generate(name),
-    //     "instance_initializer" => instance_initializer::generate(name),
-    //     "mixin" => mixin::generate(name),
-    //     "model" => model::generate(name),
-    //     "route" => route::generate(name),
-    //     "service" => service::generate(name),
-    //     "util" => util::generate(name),
+        "component" => component::generate(name, "something", project_root)?,
+        "helper" => helper::generate(name, "something", project_root)?,
+        "initializer" => initializer::generate(name, "something", project_root)?,
+        "instance_initializer" => instance_initializer::generate(name, "something", project_root)?,
+        "mixin" => mixin::generate(name, "something", project_root)?,
+        "model" => model::generate(name, "something", project_root)?,
+        "route" => route::generate(name, "something", project_root)?,
+        "service" => service::generate(name, "something", project_root)?,
+        "util" => util::generate(name, "something", project_root)?,
         _ => ()
     }
 
