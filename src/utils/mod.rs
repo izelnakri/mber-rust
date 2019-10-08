@@ -5,12 +5,12 @@ use std::env;
 use std::process;
 use yansi::Paint;
 
+pub mod application;
 pub mod console;
 pub mod ember_app_boilerplate;
-pub mod search;
 
 pub fn find_project_root() -> PathBuf {
-    let mut path = search::in_parent_directories(&env::current_dir().unwrap(), "package.json").unwrap_or_else(|| {
+    let mut path = application::in_parent_directories(&env::current_dir().unwrap(), "package.json").unwrap_or_else(|| {
         console::error("you are not on a frontend project! Change your directory");
 
         process::exit(1);
