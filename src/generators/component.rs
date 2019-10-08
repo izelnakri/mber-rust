@@ -11,8 +11,8 @@ export default Component.extend({
 });";
 
 pub fn generate(input_name: String, application_name: &str, project_root: PathBuf) -> io::Result<()> {
-    let file_name = to_snake_case(&to_singular(&input_name)).replace("_", "-");
-    let target_folder = format!("{}/src/ui/components/{}", project_root.to_string_lossy(), file_name);
+    let folder_name = to_snake_case(&to_singular(&input_name)).replace("_", "-");
+    let target_folder = format!("{}/src/ui/components/{}", project_root.to_string_lossy(), folder_name);
 
     fs::create_dir_all(&target_folder)?;
     utils::write_file_if_not_exists(format!("{}/component.js", target_folder), COMPONENT_CODE, &project_root)?;
@@ -20,12 +20,12 @@ pub fn generate(input_name: String, application_name: &str, project_root: PathBu
     utils::write_file_if_not_exists(format!("{}/styles.scss", target_folder), "", &project_root)?;
     utils::write_file_if_not_exists(
         format!("{}/integration-test.js", target_folder),
-        get_integration_test_code(file_name, application_name).as_str(),
+        get_integration_test_code(folder_name, application_name).as_str(),
         &project_root
     )
 }
 
-fn get_integration_test_code(file_name: String, application_name: &str) -> String {
+fn get_integration_test_code(folder_name: String, application_name: &str) -> String {
     return format!("import {{ module, test }} from 'qunit';
 import {{ render }} from '@ember/test-helpers';
 import hbs from 'htmlbars-inline-precompile';
@@ -51,5 +51,5 @@ module('Integration | Component | {}', function(hooks) {{
 
     assert.equal(this.element.textContent.trim(), 'template block text');
   }});
-}});", file_name, application_name, file_name, file_name, file_name);
+}});", folder_name, application_name, folder_name, folder_name, folder_name);
 }
