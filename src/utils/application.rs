@@ -29,7 +29,7 @@ mod tests {
 
     fn setup() -> io::Result<()> {
         if fs::metadata("online-shop").is_ok() {
-            fs::remove_dir_all("online-shop");
+            fs::remove_dir_all("online-shop")?;
         }
 
         fs::create_dir("online-shop")?;
@@ -48,69 +48,69 @@ mod tests {
 
     #[test]
     fn search_in_parent_directories_works_for_current_directory() -> io::Result<()> {
-        setup();
+        setup()?;
 
         let target_dir = Path::new("online-shop/shoes");
         let content = String::from_utf8(fs::read(in_parent_directories(target_dir, "shoe.js").unwrap())?).unwrap();
 
         assert_eq!(content, String::from("// find me in online-shop/shoes/shoe.js"));
 
-        fs::remove_dir_all("online-shop");
+        fs::remove_dir_all("online-shop")?;
 
         Ok(())
     }
 
     #[test]
     fn search_in_parent_directories_works_for_parent_directory() -> io::Result<()> {
-        setup();
+        setup()?;
 
         let target_dir = Path::new("online-shop/shoes");
         let content = String::from_utf8(fs::read(in_parent_directories(target_dir, "details.js").unwrap())?).unwrap();
 
         assert_eq!(content, String::from("// find me in online-shop/details.js"));
 
-        fs::remove_dir_all("online-shop");
+        fs::remove_dir_all("online-shop")?;
 
         Ok(())
     }
 
     #[test]
     fn search_in_parent_directories_works_for_two_level_parent_directory() -> io::Result<()> {
-        setup();
+        setup()?;
 
         let target_dir = Path::new("online-shop/shoes/shoe");
         let content = String::from_utf8(fs::read(in_parent_directories(target_dir, "details.js").unwrap())?).unwrap();
 
         assert_eq!(content, String::from("// find me in online-shop/details.js"));
 
-        fs::remove_dir_all("online-shop");
+        fs::remove_dir_all("online-shop")?;
 
         Ok(())
     }
 
     #[test]
     fn search_in_parent_directories_gets_right_files_when_it_has_duplicate_in_parents() -> io::Result<()> {
-        setup();
+        setup()?;
 
         let target_dir = Path::new("online-shop/shoes");
         let content = String::from_utf8(fs::read(in_parent_directories(target_dir, "index.js").unwrap())?).unwrap();
 
         assert_eq!(content, String::from("// find me in online-shop/shoes/index.js"));
 
-        fs::remove_dir_all("online-shop");
+        fs::remove_dir_all("online-shop")?;
 
         Ok(())
     }
 
     #[test]
     fn search_in_parent_directories_return_none_when_nothing_is_found() -> io::Result<()> {
-        setup();
+        setup()?;
 
         let target_dir = Path::new("online-shop/shoes");
 
         assert_eq!(in_parent_directories(target_dir, "lol.js").is_none(), true);
 
-        fs::remove_dir_all("online-shop");
+        fs::remove_dir_all("online-shop")?;
 
         Ok(())
     }

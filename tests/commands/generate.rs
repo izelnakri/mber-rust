@@ -1,3 +1,4 @@
+use std::env;
 use std::io;
 use std::fs;
 
@@ -16,6 +17,11 @@ fn setup() -> io::Result<()> {
 #[test]
 fn generate_command_shows_right_exceptions() -> io::Result<()> {
     setup()?;
+
+    let current_directory = env::current_dir()?;
+    let project_directory = format!("{}/dummyapp", current_directory.to_string_lossy());
+
+    env::set_current_dir(&project_directory)?;
 
     let (stdout, output) = mber::spawn("generate");
 
@@ -45,7 +51,7 @@ fn generate_command_shows_right_exceptions() -> io::Result<()> {
         true
     );
 
-    let (stdout, output) = mber::spawn("g model cities");
+    let (_stdout, output) = mber::spawn("g model cities");
 
     assert_eq!(output.status.success(), true);
     // assert_eq!(
@@ -54,6 +60,8 @@ fn generate_command_shows_right_exceptions() -> io::Result<()> {
     // );
     // TODO: also create the respective file
     // TODO: then make one that passes
+
+    env::set_current_dir(&current_directory)?;
 
     fs::remove_dir_all("dummyapp")?;
 

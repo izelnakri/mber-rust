@@ -25,7 +25,7 @@ jobs:
       - setup_remote_docker
       - run: docker pull ${HUB_USERNAME}/mber-rust:${CIRCLE_BRANCH}
       - run: docker run -t -d --name="mber-rust" ${HUB_USERNAME}/mber-rust:${CIRCLE_BRANCH} /bin/bash
-      - run: docker exec -it mber-rust cargo test -- --nocapture
+      - run: docker exec -it mber-rust cargo test -- --test-threads=1 --nocapture
 
 workflows:
   version: 2

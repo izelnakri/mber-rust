@@ -50,11 +50,11 @@ mod tests {
         let current_directory = env::current_dir()?;
         let project_directory = format!("{}/ember-app-boilerplate", current_directory.to_string_lossy());
 
-        env::set_current_dir(&project_directory);
+        env::set_current_dir(&project_directory)?;
 
         assert_eq!(find_project_root(), PathBuf::from(project_directory));
 
-        env::set_current_dir(&current_directory);
+        env::set_current_dir(&current_directory)?;
 
         Ok(())
     }
@@ -65,11 +65,11 @@ mod tests {
         let project_directory = format!("{}/ember-app-boilerplate", current_directory.to_string_lossy());
         let mocked_directory = format!("{}/ember-app-boilerplate/src", current_directory.to_string_lossy());
 
-        env::set_current_dir(&mocked_directory);
+        env::set_current_dir(&mocked_directory)?;
 
         assert_eq!(find_project_root(), PathBuf::from(project_directory));
 
-        env::set_current_dir(&current_directory);
+        env::set_current_dir(&current_directory)?;
 
         Ok(())
     }
@@ -80,11 +80,11 @@ mod tests {
         let project_directory = format!("{}/ember-app-boilerplate", current_directory.to_string_lossy());
         let mocked_directory = format!("{}/ember-app-boilerplate/src/ui", current_directory.to_string_lossy());
 
-        env::set_current_dir(&mocked_directory);
+        env::set_current_dir(&mocked_directory)?;
 
         assert_eq!(find_project_root(), PathBuf::from(project_directory));
 
-        env::set_current_dir(&current_directory);
+        env::set_current_dir(&current_directory)?;
 
         Ok(())
     }
