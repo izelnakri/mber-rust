@@ -1,0 +1,19 @@
+[package]
+name = "mber-rust"
+version = "0.1.0"
+authors = ["Izel Nakri <contact@izelnakri.com>"]
+license = "MIT"
+build = "build.rs"
+exclude = ["artifacts.json", "index.node"]
+
+[lib]
+name = "mber_rust"
+crate-type = ["cdylib"]
+
+[build-dependencies]
+neon-build = "0.3.1"
+
+[dependencies]
+neon = "0.3.1"
+mber = "0.1.4"
+# mber = { path = ".." }

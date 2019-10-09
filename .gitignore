@@ -1,3 +1,7 @@
 /target
+native/target
+node_modules
+ember-app-boilerplate/node_modules
+ember-app-boilerplate/package-lock.json
 **/*.rs.bk
 src/utils/ember_app_boilerplate.rs

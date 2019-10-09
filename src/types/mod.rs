@@ -15,3 +15,9 @@ pub struct Config {
     index_html_injections: Vec<String>,
     project_root: Path
 }
+
+impl Config {
+    fn build() {
+        println!("Building configuration...");
+    }
+}
