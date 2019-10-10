@@ -1,10 +1,14 @@
 # mber-rust
 
-WARNING: THIS A WORK IN PROGRESS|PROOF_-OF-CONCEPT PHASE SOFTWARE.
+WARNING: THIS A WORK IN PROGRESS PROOF-OF-CONCEPT PHASE SOFTWARE.
 
 ```
 cargo install mber
 ```
+Build system consists of 2 packages:
+- mber: a cli re-written in Rust, it provides an exceptionally fast user experience to already very fast mber build system.
+- mber-rust: This is an npm package with neon/rust bindings. This package allows us to run a node.js runtime/JS execution context for fastboot while utilizing mber cli.
+This npm library also exposes internal build functions written in rust to JavaScript via neon bindings.
 
 Folders:
 - ember-app-boilerplate: Boilerplate project that dynamically gets writen on $ mber new.
