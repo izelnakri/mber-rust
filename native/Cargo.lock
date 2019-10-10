@@ -294,15 +294,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mber-rust"
-version = "0.1.0"
-dependencies = [
- "mber 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "neon 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "neon-build 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "memchr"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -460,6 +451,15 @@ dependencies = [
 name = "regex-syntax"
 version = "0.6.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "rust_mber"
+version = "0.1.0"
+dependencies = [
+ "mber 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neon 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "neon-build 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "rustc_version"

@@ -8,7 +8,8 @@ pub fn run() -> std::io::Result<()> {
 
     let project_root = utils::find_project_root();
     let mut command = Command::new("node")
-        .args(&[format!("{}/index.js", project_root.to_string_lossy())]) // make this an absolute path
+        .args(&[format!("{}/index.js", project_root.to_string_lossy())]) // TODO: this refers to the module make it run inside a module with ENV!
+        .current_dir(project_root)
         .output()
         .expect("couldnt run node index.js on the project");
 

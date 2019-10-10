@@ -1,7 +1,6 @@
 // cargo:rerun-if-changed=build.rs
 use core::str::Split;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
@@ -52,7 +51,9 @@ fn update_help_command_with_version_from_cargo() -> Result<()> {
 }
 
 fn inject_fs_hashmap_to_binary_source_code() -> Result<()> {
-    let walker = WalkDir::new("ember-app-boilerplate").into_iter();
+    let walker = WalkDir::new("ember-app-boilerplate").into_iter().filter_entry(|entry| {
+        return entry.path().display().to_string().ne("ember-app-boilerplate/node_modules");
+    });
     let mut file_system_map: RefCell<HashMap<String, KeyValue>> = RefCell::new(HashMap::new());
 
     for entry in walker {
@@ -117,7 +118,7 @@ fn get_from_directory_map_from_map<'a>(
                 _ => panic!(
                     "{} must exist in the fs directory mapping in memory!",
                     directory_name
-                ),
+                )
             }
         },
     );

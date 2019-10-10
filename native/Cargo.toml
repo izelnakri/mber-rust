@@ -1,5 +1,5 @@
 [package]
-name = "mber-rust"
+name = "rust_mber"
 version = "0.1.0"
 authors = ["Izel Nakri <contact@izelnakri.com>"]
 license = "MIT"
@@ -7,7 +7,7 @@ build = "build.rs"
 exclude = ["artifacts.json", "index.node"]
 
 [lib]
-name = "mber_rust"
+name = "rust_mber"
 crate-type = ["cdylib"]
 
 [build-dependencies]

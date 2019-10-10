@@ -2,8 +2,8 @@
 extern crate neon;
 extern crate mber;
 
-use neon::prelude::*;
 use mber::utils::console;
+use neon::prelude::*;
 
 fn import(mut cx: FunctionContext) -> JsResult<JsString> {
     Ok(cx.string(""))
