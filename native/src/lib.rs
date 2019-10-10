@@ -22,7 +22,7 @@ fn inject_inline_content(mut cx: FunctionContext) -> JsResult<JsString> {
 }
 
 fn build(mut cx: FunctionContext) -> JsResult<JsString> {
-    console::log("calling build....");
+    console::log("This is from Rust!: calling from index.js neon binding....");
 
     Ok(cx.string("returning from build bro"))
 }

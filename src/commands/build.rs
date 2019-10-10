@@ -1,5 +1,5 @@
 use std::process::Command;
-use super::super::types::cli_arguments::CLIArguments;
+// use super::super::types::cli_arguments::CLIArguments;
 use super::super::utils;
 use super::super::utils::{console};
 
@@ -7,8 +7,11 @@ pub fn run() -> std::io::Result<()> {
     console::log("Building the application...");
 
     let project_root = utils::find_project_root();
-    let mut command = Command::new("node")
-        .args(&[format!("{}/index.js", project_root.to_string_lossy())]) // TODO: this refers to the module make it run inside a module with ENV!
+    let project_root_path = project_root.to_string_lossy();
+    let command = Command::new("node")
+        .args(&["-e", format!("
+            require('{}/index.js')({{ }});
+        ", project_root_path).as_str()])
         .current_dir(project_root)
         .output()
         .expect("couldnt run node index.js on the project");

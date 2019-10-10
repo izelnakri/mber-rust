@@ -27,5 +27,6 @@ module.exports = function(ENV) {
     );
   }
 
+  console.log("calling from index.js build JS");
   return app.build(environment);
 };
