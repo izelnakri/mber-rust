@@ -8,6 +8,8 @@ use yansi::Paint;
 pub mod application;
 pub mod console;
 pub mod ember_app_boilerplate;
+pub mod recursive_file_lookup;
+pub mod say;
 
 pub fn find_project_root() -> PathBuf {
     let mut path = application::in_parent_directories(&env::current_dir().unwrap(), "package.json").unwrap_or_else(|| {
