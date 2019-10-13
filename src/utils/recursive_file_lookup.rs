@@ -1,5 +1,7 @@
 use std::path::{Path, PathBuf};
+use std::iter::Iterator;
 use walkdir::WalkDir;
+use walkdir::DirEntry;
 
 pub fn with_extensions(directory: &Path, extensions: Vec<&str>) -> Vec<PathBuf> {
     return WalkDir::new(directory).into_iter().filter_map(|e| {
@@ -12,15 +14,24 @@ pub fn with_extensions(directory: &Path, extensions: Vec<&str>) -> Vec<PathBuf> 
     }).collect();
 }
 
-// NOTE: maybe in future:
-// pub fn with_extensions_and_predicate(directory: &Path, extensions: &Vec, filter: Fn) -> Vec<Path> {
+pub fn with_extensions_and_predicate<F>(directory: &Path, extensions: Vec<&str>, filter: F) -> Vec<PathBuf>
+    where F: Fn(&DirEntry) -> bool {
+    return WalkDir::new(directory).into_iter().filter_map(|e| {
+        let entry = e.unwrap();
+        let entry_correct_extension = extensions.iter()
+            .any(|extension| entry.file_name().to_str().unwrap().ends_with(extension));
 
-// }
+
+        return match entry_correct_extension && filter(&entry) {
+            true => Some(entry.into_path()),
+            false => None
+        };
+    }).collect();
+}
 
 #[cfg(test)]
 mod tests {
     use std::io;
-    use std::env;
     use std::fs;
     use super::*;
 
@@ -48,15 +59,7 @@ mod tests {
     #[test]
     fn with_extensions_works_for_js_and_hbs() -> io::Result<()> {
         setup()?;
-      // const onlineShopJSFiles = await lookup(`${CWD}/online-shop`, 'js');
-      // const onlineShopHBSFiles = await lookup(`${CWD}/online-shop`, 'hbs');
-      // const onlineShopFiles = await lookup(`${CWD}/online-shop`, ['js', 'hbs']);
-      // const shoesJSFiles = await lookup(`${CWD}/online-shop/shoes`, 'js');
-      // const shoesHBSFiles = await lookup(`${CWD}/online-shop/shoes`, 'hbs');
-      // const shoesFiles = await lookup(`${CWD}/online-shop/shoes`, ['js', 'hbs']);
-      // const shoeFiles = await lookup(`${CWD}/online-shop/shoes/shoe`, ['js', 'hbs']);
 
-        let current_dir = env::current_dir()?;
         let online_shop_directory = Path::new("online-shop");
         let shoes_directory = Path::new("online-shop/shoes");
         let shoe_directory = Path::new("online-shop/shoes/shoe");
@@ -117,8 +120,6 @@ mod tests {
     fn with_extensions_works_when_there_are_no_reference_files() -> io::Result<()> {
         setup()?;
 
-        let current_dir = env::current_dir()?;
-        let online_shop_directory = Path::new("online-shop");
         let shoe_directory = Path::new("online-shop/shoes/shoe");
         let shoe_hbs_files = with_extensions(shoe_directory, vec!["hbs"]);
         let online_shop_txt_files = with_extensions(shoe_directory, vec!["txt"]);
@@ -133,6 +134,42 @@ mod tests {
             empty_array
         );
 
+        return fs::remove_dir_all("online-shop");
+    }
+
+    #[test]
+    fn with_extensions_and_predicate_works_for_js_and_hbs() -> io::Result<()> {
+        setup()?;
+
+        let online_shop_directory = Path::new("online-shop");
+        let shoes_directory = Path::new("online-shop/shoes");
+        let online_shop_js_files = with_extensions_and_predicate(online_shop_directory, vec!["js"], |e: &DirEntry| {
+            return e.file_name().to_str().unwrap().ends_with("brown.js");
+        });
+        let online_shop_files = with_extensions_and_predicate(online_shop_directory, vec!["hbs", "js"], |e| {
+            let file_name = e.file_name().to_str().unwrap();
+
+            return file_name.ends_with("brown.js") || file_name.ends_with("details.hbs");
+        });
+        let shoes_js_files = with_extensions_and_predicate(shoes_directory, vec!["js"], |_| false);
+        let empty_array: Vec<&str> = Vec::new();
+
+        assert_eq!(
+            online_shop_js_files.iter().map(|x| x.to_str().unwrap()).collect::<Vec<&str>>(),
+            vec![
+                "online-shop/shoes/shoe/brown.js", "online-shop/shoes/brown.js"
+            ]
+        );
+        assert_eq!(
+            online_shop_files.iter().map(|x| x.to_str().unwrap()).collect::<Vec<&str>>(),
+            vec![
+                "online-shop/shoes/shoe/brown.js", "online-shop/shoes/brown.js", "online-shop/details.hbs"
+            ]
+        );
+        assert_eq!(
+            shoes_js_files.iter().map(|x| x.to_str().unwrap()).collect::<Vec<&str>>(),
+            empty_array
+        );
         return fs::remove_dir_all("online-shop");
     }
 }
