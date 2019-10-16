@@ -1,7 +1,7 @@
 use yansi::Paint;
 
 pub fn run() -> std::io::Result<()> {
-    let version = "0.1.4";
+    let version = "0.1.5";
 
     println!(
         "{} mber {}

@@ -3,7 +3,7 @@ use std::iter::Iterator;
 use walkdir::WalkDir;
 use walkdir::DirEntry;
 
-pub fn with_extensions(directory: &Path, extensions: Vec<&str>) -> Vec<PathBuf> {
+pub fn lookup_for_extensions(directory: &Path, extensions: Vec<&str>) -> Vec<PathBuf> {
     return WalkDir::new(directory).into_iter().filter_map(|e| {
         let entry = e.unwrap();
 
@@ -14,7 +14,7 @@ pub fn with_extensions(directory: &Path, extensions: Vec<&str>) -> Vec<PathBuf> 
     }).collect();
 }
 
-pub fn with_extensions_and_predicate<F>(directory: &Path, extensions: Vec<&str>, filter: F) -> Vec<PathBuf>
+pub fn lookup_for_extensions_and_predicate<F>(directory: &Path, extensions: Vec<&str>, filter: F) -> Vec<PathBuf>
     where F: Fn(&DirEntry) -> bool {
     return WalkDir::new(directory).into_iter().filter_map(|e| {
         let entry = e.unwrap();
@@ -57,19 +57,19 @@ mod tests {
     }
 
     #[test]
-    fn with_extensions_works_for_js_and_hbs() -> io::Result<()> {
+    fn lookup_for_extensions_works_for_js_and_hbs() -> io::Result<()> {
         setup()?;
 
         let online_shop_directory = Path::new("online-shop");
         let shoes_directory = Path::new("online-shop/shoes");
         let shoe_directory = Path::new("online-shop/shoes/shoe");
-        let online_shop_js_files = with_extensions(online_shop_directory, vec!["js"]);
-        let online_shop_hbs_files = with_extensions(online_shop_directory, vec!["hbs"]);
-        let online_shop_files = with_extensions(online_shop_directory, vec!["hbs", "js"]);
-        let shoes_js_files = with_extensions(shoes_directory, vec!["js"]);
-        let shoes_hbs_files = with_extensions(shoes_directory, vec!["hbs"]);
-        let shoes_files = with_extensions(shoes_directory, vec!["js", "hbs"]);
-        let shoe_files = with_extensions(shoe_directory, vec!["js", "hbs"]);
+        let online_shop_js_files = lookup_for_extensions(online_shop_directory, vec!["js"]);
+        let online_shop_hbs_files = lookup_for_extensions(online_shop_directory, vec!["hbs"]);
+        let online_shop_files = lookup_for_extensions(online_shop_directory, vec!["hbs", "js"]);
+        let shoes_js_files = lookup_for_extensions(shoes_directory, vec!["js"]);
+        let shoes_hbs_files = lookup_for_extensions(shoes_directory, vec!["hbs"]);
+        let shoes_files = lookup_for_extensions(shoes_directory, vec!["js", "hbs"]);
+        let shoe_files = lookup_for_extensions(shoe_directory, vec!["js", "hbs"]);
 
         assert_eq!(
             online_shop_js_files.iter().map(|x| x.to_str().unwrap()).collect::<Vec<&str>>(),
@@ -117,12 +117,12 @@ mod tests {
     }
 
     #[test]
-    fn with_extensions_works_when_there_are_no_reference_files() -> io::Result<()> {
+    fn lookup_for_extensions_works_when_there_are_no_reference_files() -> io::Result<()> {
         setup()?;
 
         let shoe_directory = Path::new("online-shop/shoes/shoe");
-        let shoe_hbs_files = with_extensions(shoe_directory, vec!["hbs"]);
-        let online_shop_txt_files = with_extensions(shoe_directory, vec!["txt"]);
+        let shoe_hbs_files = lookup_for_extensions(shoe_directory, vec!["hbs"]);
+        let online_shop_txt_files = lookup_for_extensions(shoe_directory, vec!["txt"]);
         let empty_array: Vec<&str> = Vec::new();
 
         assert_eq!(
@@ -138,20 +138,20 @@ mod tests {
     }
 
     #[test]
-    fn with_extensions_and_predicate_works_for_js_and_hbs() -> io::Result<()> {
+    fn lookup_for_extensions_and_predicate_works_for_js_and_hbs() -> io::Result<()> {
         setup()?;
 
         let online_shop_directory = Path::new("online-shop");
         let shoes_directory = Path::new("online-shop/shoes");
-        let online_shop_js_files = with_extensions_and_predicate(online_shop_directory, vec!["js"], |e: &DirEntry| {
+        let online_shop_js_files = lookup_for_extensions_and_predicate(online_shop_directory, vec!["js"], |e: &DirEntry| {
             return e.file_name().to_str().unwrap().ends_with("brown.js");
         });
-        let online_shop_files = with_extensions_and_predicate(online_shop_directory, vec!["hbs", "js"], |e| {
+        let online_shop_files = lookup_for_extensions_and_predicate(online_shop_directory, vec!["hbs", "js"], |e| {
             let file_name = e.file_name().to_str().unwrap();
 
             return file_name.ends_with("brown.js") || file_name.ends_with("details.hbs");
         });
-        let shoes_js_files = with_extensions_and_predicate(shoes_directory, vec!["js"], |_| false);
+        let shoes_js_files = lookup_for_extensions_and_predicate(shoes_directory, vec!["js"], |_| false);
         let empty_array: Vec<&str> = Vec::new();
 
         assert_eq!(

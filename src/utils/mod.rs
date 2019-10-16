@@ -8,6 +8,7 @@ use yansi::Paint;
 pub mod application;
 pub mod console;
 pub mod ember_app_boilerplate;
+pub mod file;
 pub mod recursive_file_lookup;
 pub mod say;
 
