@@ -5,18 +5,17 @@ use inflector::cases::classcase::to_class_case;
 use inflector::cases::snakecase::to_snake_case;
 use super::super::utils;
 
-const MIXIN_CODE : &'static str = "import Mixin from '@ember/object/mixin';
-
-export default Mixin.create({
-});";
-
 pub fn generate(input_name: String, application_name: &str, project_root: PathBuf) -> io::Result<()> {
+    let mixin_code = "import Mixin from '@ember/object/mixin';
+
+    export default Mixin.create({
+    });";
     let file_name = to_snake_case(&input_name).replace("_", "-");
     let target_folder = format!("{}/src/utils/mixins", project_root.to_str().unwrap());
     let target_file_path = format!("{}/{}", target_folder, file_name);
 
     fs::create_dir_all(target_folder)?;
-    utils::write_file_if_not_exists(format!("{}.js", target_file_path), MIXIN_CODE, &project_root)?;
+    utils::write_file_if_not_exists(format!("{}.js", target_file_path), mixin_code, &project_root)?;
 
     let test_code = get_test_code(file_name, application_name);
 

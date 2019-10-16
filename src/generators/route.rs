@@ -4,17 +4,16 @@ use std::path::PathBuf;
 use inflector::cases::snakecase::to_snake_case;
 use super::super::utils;
 
-const ROUTE_CODE: &'static str = "import Route from '@ember/routing/route';
-
-export default Route.extend({
-});";
-
 pub fn generate(input_name: String, application_name: &str, project_root: PathBuf) -> io::Result<()> {
+    let route_code = "import Route from '@ember/routing/route';
+
+    export default Route.extend({
+    });";
     let folder_name = to_snake_case(&input_name).replace("_", "-");
     let target_folder = format!("{}/src/ui/routes/{}", project_root.to_str().unwrap(), folder_name);
 
     fs::create_dir_all(&target_folder)?;
-    utils::write_file_if_not_exists(format!("{}/route.js", &target_folder), ROUTE_CODE, &project_root)?;
+    utils::write_file_if_not_exists(format!("{}/route.js", &target_folder), route_code, &project_root)?;
     utils::write_file_if_not_exists(format!("{}/template.hbs", &target_folder), "{{{{outlet}}}}", &project_root)?;
     utils::write_file_if_not_exists(format!("{}/styles.scss", &target_folder), "", &project_root)?;
     utils::write_file_if_not_exists(

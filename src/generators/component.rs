@@ -5,17 +5,16 @@ use inflector::cases::snakecase::to_snake_case;
 use inflector::string::singularize::to_singular;
 use super::super::utils;
 
-const COMPONENT_CODE: &'static str = "import Component from '@ember/component';
-
-export default Component.extend({
-});";
-
 pub fn generate(input_name: String, application_name: &str, project_root: PathBuf) -> io::Result<()> {
+    let component_code = "import Component from '@ember/component';
+
+    export default Component.extend({
+    });";
     let folder_name = to_snake_case(&to_singular(&input_name)).replace("_", "-");
     let target_folder = format!("{}/src/ui/components/{}", project_root.to_string_lossy(), folder_name);
 
     fs::create_dir_all(&target_folder)?;
-    utils::write_file_if_not_exists(format!("{}/component.js", target_folder), COMPONENT_CODE, &project_root)?;
+    utils::write_file_if_not_exists(format!("{}/component.js", target_folder), component_code, &project_root)?;
     utils::write_file_if_not_exists(format!("{}/template.hbs", target_folder), "{{yield}}", &project_root)?;
     utils::write_file_if_not_exists(format!("{}/styles.scss", target_folder), "", &project_root)?;
     utils::write_file_if_not_exists(

@@ -6,20 +6,18 @@ use super::super::utils::{console};
 pub fn run() -> std::io::Result<()> {
     console::log("Building the application...");
 
+    // TODO: add ENV and config
     let project_root = utils::find_project_root();
     let project_root_path = project_root.to_string_lossy();
-    let command = Command::new("node")
+    let _output = Command::new("node")
         .args(&["-e", format!("
             require('{}/index.js')({{ }});
         ", project_root_path).as_str()])
         .current_dir(project_root)
-        .output()
+        .spawn()
+        .expect("couldnt spawn node index.js on the project")
+        .wait_with_output()
         .expect("couldnt run node index.js on the project");
-
-    let stdout = String::from_utf8(command.stdout.to_vec()).unwrap();
-    let stderr = String::from_utf8(command.stderr.to_vec()).unwrap();
-    println!("{}", stdout);
-    println!("stderr: {}", stderr);
 
     // let cli_arguments = CLIArguments::new();
     // TODO: get ENV

@@ -5,18 +5,17 @@ use inflector::cases::snakecase::to_snake_case;
 use inflector::string::singularize::to_singular;
 use super::super::utils;
 
-const MODEL_CODE: &'static str = "import DS from 'ember-data';
-
-export default DS.Model.extend({
-
-});";
-
 pub fn generate(input_name: String, application_name: &str, project_root: PathBuf) -> io::Result<()> {
+    let model_code = "import DS from 'ember-data';
+
+    export default DS.Model.extend({
+
+    });";
     let folder_name = to_snake_case(&to_singular(&input_name)).replace("_", "-");
     let target_folder = format!("{}/src/data/models/{}", project_root.to_str().unwrap(), folder_name);
 
     fs::create_dir_all(&target_folder)?;
-    utils::write_file_if_not_exists(format!("{}/model.js", &target_folder), MODEL_CODE, &project_root)?;
+    utils::write_file_if_not_exists(format!("{}/model.js", &target_folder), model_code, &project_root)?;
 
     let test_code = get_test_code(folder_name, application_name);
 

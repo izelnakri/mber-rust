@@ -3,17 +3,17 @@ use std::path::PathBuf;
 use inflector::cases::snakecase::to_snake_case;
 use super::super::utils;
 
-const HELPER_CODE: &'static str = "import Helper from '@ember/component/helper'
-
-export let helper = Helper.helper((params/*, hash*/) => {
-  return params;
-});";
-
 pub fn generate(input_name: String, application_name: &str, project_root: PathBuf) -> io::Result<()> {
+    let helper_code = "import Helper from '@ember/component/helper'
+
+    export let helper = Helper.helper((params/*, hash*/) => {
+      return params;
+    });";
+
     let file_name = to_snake_case(&input_name).replace("_", "-");
     let target_file_path = format!("{}/src/ui/components/{}", project_root.to_str().unwrap(), file_name);
 
-    utils::write_file_if_not_exists(format!("{}.js", target_file_path), HELPER_CODE, &project_root)?;
+    utils::write_file_if_not_exists(format!("{}.js", target_file_path), helper_code, &project_root)?;
 
     let test_code = get_test_code(file_name, &application_name);
 
