@@ -1,15 +1,15 @@
-use hyper::Uri;
+// use hyper::Uri;
 
-#[derive(Debug)]
-enum Proxy {
-    Uri, None
-}
+// #[derive(Debug)]
+// enum Proxy {
+//     Uri, None
+// }
 
 #[derive(Debug)]
 pub struct CLIArguments {
     env: &'static str,
     port: u16,
-    proxy: Option<Proxy>,
+    // proxy: Option<Proxy>,
     server: bool,
     fastboot: bool,
     watch: bool,
@@ -19,11 +19,11 @@ pub struct CLIArguments {
 }
 
 impl CLIArguments {
-    pub fn new() -> Self { // TODO: add different arguments
+    pub fn parse() -> Self { // TODO: add different arguments, overwritable
         CLIArguments {
             env: "development",
             port: 1234,
-            proxy: None,
+            // proxy: None,
             server: true,
             fastboot: true,
             watch: true,

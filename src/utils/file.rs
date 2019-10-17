@@ -2,7 +2,7 @@ pub fn format_time_passed(time_passed: u128) -> String {
     return time_passed.to_string().as_str().to_owned() + "ms";
 }
 
-pub fn format_size<'a>(size_in_bytes: usize) -> String {
+pub fn format_size<'a>(size_in_bytes: u64) -> String {
     if size_in_bytes > 999994 {
         return format!("{:.2} MB", (size_in_bytes as f64 / 1000000.0));
     }

@@ -9,9 +9,8 @@ use super::super::utils::{console, recursive_file_lookup, file};
 use super::super::transpilers;
 use super::super::types::Config;
 
-// NOTE: needed modules: Terser, formatSize
 // NOTE: eslint in rust(This one is challenging)
-pub fn build(config: Box<Config>, _lint: bool) -> Result<(String, fs::Metadata), Box<dyn Error>> {
+pub fn build(config: Config, _lint: bool) -> Result<(String, fs::Metadata), Box<dyn Error>> {
     console::log(format!("{} application.js...", Paint::yellow("BUILDING:")));
 
     let build_start = Instant::now();
@@ -23,11 +22,11 @@ pub fn build(config: Box<Config>, _lint: bool) -> Result<(String, fs::Metadata),
         vec![".js", ".ts", ".hbs"],
         |entry| { return !entry.file_name().to_str().unwrap().ends_with("-test.js"); }
     ).iter()
-    .map(|file| transpilers::convert_es_module::from_file(file, &config.ENV["environment"] == "production"))
+    .map(|file| transpilers::convert_es_module::from_file(file, &config.env["environment"] == "production"))
     .collect::<Vec<&str>>()
     .join("/n");
     let application_name = &config.application_name;
-    let stringified_env = &config.ENV.to_string();
+    let stringified_env = &config.env.to_string();
     let code = format!("
         {}
         define = window.define;
@@ -85,10 +84,10 @@ pub fn build(config: Box<Config>, _lint: bool) -> Result<(String, fs::Metadata),
 
     let output_metadata = fs::metadata(output_path)?;
     let message = format!(
-        "{} application.js in {}ms [{}] Environment: environment",
+        "{} application.js in {} [{}] Environment: environment",
         Paint::green("BUILT:"),
         Paint::yellow(file::format_time_passed(build_start.elapsed().as_millis())),
-        "666kb" // TODO: humanize this
+        file::format_size(output_metadata.len())
     );
 
     console::log(&message);
@@ -101,30 +100,36 @@ pub fn build(config: Box<Config>, _lint: bool) -> Result<(String, fs::Metadata),
 #[cfg(test)]
 mod tests {
     use std::io;
-    use std::fs;
-//     use super::*;
+    use std::env;
+    use super::*;
+    use std::path::PathBuf;
+    use serde_json::json;
+    use std::collections::HashMap;
+    use super::super::super::types::BuildCache;
 
-    // NOTE: maybe create /tmp/assets
+    fn setup() -> Result<(PathBuf, String, String), Box<dyn Error>> {
+        let current_directory = env::current_dir()?;
+        let project_directory = format!("{}/ember-app-boilerplate", current_directory.to_string_lossy());
+        let application_js_output_path = format!("{}/tmp/assets/application.js", &project_directory);
 
+        fs::remove_file(&application_js_output_path);
+        env::set_current_dir(&project_directory)?;
+
+        return Ok((current_directory, project_directory, application_js_output_path));
+    }
 
     #[test]
-    fn build_works_for_development() -> io::Result<()> {
-        let APPLICATION_JS_OUTPUT_PATH: &'static str = "/tmp/assets/application.js";
-        // TODO: run this on ember-app-boilerplate
-        assert_eq!(fs::metadata(APPLICATION_JS_OUTPUT_PATH).is_ok(), false);
+    fn build_works_for_development() -> Result<(), Box<dyn Error>> {
+        let (current_directory, _project_directory, application_js_output_path) = setup()?;
 
-        // let config = Config {
-        //     application_name: &'static str,
-        //     build_cache: Box<BuildCache>,
-        //     cli_arguments: Box<CLIArguments>,
-        //     ENV: {
-        //         ENV: { environment: 'development', modulePrefix: 'frontend' }
-        //     },
-        //     index_html_injections: HashMap<String, String>,
-        //     project_root: Path
-        // }
+        assert_eq!(fs::metadata(&application_js_output_path).is_ok(), false);
 
-        // let (message, stats) = build(config, false) // NOTE: config and lint
+        let config = Config::build(
+            json!({ "environment": "development", "modulePrefix": "frontend" }),
+            HashMap::new(),
+            BuildCache::new()
+        );
+        let (message, stats) = build(config, false)?; // NOTE: config and lint
         // let time_taken_for_build = message
             // .match(/application\.js in \d+ms/g)[0]
             // .replace('application.js in ', '')
@@ -140,6 +145,10 @@ mod tests {
         // t.true(stats.size >= APPLICATION_JS_TARGET_BYTE_SIZE - 1000);
         // console.log('MESSAGE WAS', message);
         // t.true(/BUILT: application\.js in \d+ms \[12.10 kB\] Environment: development/g.test(message));
+        assert_eq!(true, true);
+
+        env::set_current_dir(&current_directory)?;
+
         Ok(())
     }
 //
