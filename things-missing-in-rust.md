@@ -1,4 +1,6 @@
 - REPL
+- Default function arguments
+- HashMap literal macros (hashmap!{}, btreemap!{} etc)
 - test reporters
 - test.serial?
 - test afterEach

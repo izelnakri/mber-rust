@@ -73,7 +73,6 @@ pub fn build(config: Config, _lint: bool) -> Result<(String, fs::Metadata), Box<
         }}
 
         {}
-      `
     ", config.build_cache.application_prepends, contents, application_name, stringified_env, stringified_env,
     application_name, application_name, application_name, application_name, application_name,
     config.build_cache.application_appends);
@@ -84,43 +83,201 @@ pub fn build(config: Config, _lint: bool) -> Result<(String, fs::Metadata), Box<
 
     let output_metadata = fs::metadata(output_path)?;
     let message = format!(
-        "{} application.js in {} [{}] Environment: environment",
+        "{} application.js in {} [{}] Environment: {}",
         Paint::green("BUILT:"),
         Paint::yellow(file::format_time_passed(build_start.elapsed().as_millis())),
-        file::format_size(output_metadata.len())
+        file::format_size(output_metadata.len()),
+        &config.env["environment"].as_str().unwrap()
     );
 
     console::log(&message);
 
-    // then linting
+    // NOTE: then linting
 
     return Ok((message, output_metadata));
 }
 
 #[cfg(test)]
 mod tests {
-    use std::io;
     use std::env;
     use super::*;
     use std::path::PathBuf;
+    use regex::Regex;
     use serde_json::json;
     use std::collections::HashMap;
     use super::super::super::types::BuildCache;
 
-    fn setup() -> Result<(PathBuf, String, String), Box<dyn Error>> {
+    const APPLICATION_JS_BUILD_TIME_THRESHOLD: u32 = 2000;
+    const APPLICATION_JS_TARGET_BYTE_SIZE: u64 = 1100;
+    const APPLICATION_JS_COMPRESSED_TARGET_BYTE_SIZE: u64 = 1100;
+    const CODE_TO_PREPEND: &str = "(function() { console.log('this is prepending code') })()";
+    const CODE_TO_APPEND: &str = "(function() { console.log('this is appending code') })()";
+
+    fn setup_test() -> Result<(PathBuf, String, String), Box<dyn Error>> {
         let current_directory = env::current_dir()?;
         let project_directory = format!("{}/ember-app-boilerplate", current_directory.to_string_lossy());
         let application_js_output_path = format!("{}/tmp/assets/application.js", &project_directory);
 
-        fs::remove_file(&application_js_output_path);
+        Paint::disable();
+        fs::remove_file(&application_js_output_path)?;
         env::set_current_dir(&project_directory)?;
 
-        return Ok((current_directory, project_directory, application_js_output_path));
+        return Ok((current_directory, application_js_output_path, project_directory));
+    }
+
+    fn finalize_test(actual_current_directory: PathBuf) -> Result<(), Box<dyn Error>> {
+        Paint::enable();
+        env::set_current_dir(&actual_current_directory)?;
+
+        return Ok(());
     }
 
     #[test]
     fn build_works_for_development() -> Result<(), Box<dyn Error>> {
-        let (current_directory, _project_directory, application_js_output_path) = setup()?;
+        let (current_directory, application_js_output_path, _) = setup_test()?;
+
+        assert_eq!(fs::metadata(&application_js_output_path).is_ok(), false);
+
+        let config = Config::build(
+            json!({ "environment": "development", "moduleprefix": "frontend" }),
+            HashMap::new(),
+            BuildCache::new()
+        );
+        let (message, _stats) = build(config, false)?; // note: config and lint
+        let build_time_in_ms = Regex::new(r"application\.js in \d+ms")?
+            .find(message.as_str()).unwrap().as_str()
+            .replace("application.js in ", "")
+            .replace("ms", "")
+            .parse::<u32>()?;
+
+        assert!(build_time_in_ms < APPLICATION_JS_BUILD_TIME_THRESHOLD);
+
+        // let application_js_code = fs::read_to_string(application_js_output_path).unwrap();
+        // todo: content checks
+
+        assert!(fs::metadata(application_js_output_path)?.len() >= APPLICATION_JS_TARGET_BYTE_SIZE - 1000);
+        assert!(Regex::new(r"BUILT: application\.js in \d+ms \[\d+.\d+ kB\] Environment: development")?.find(&message).is_some());
+
+        return finalize_test(current_directory);
+    }
+
+    #[test]
+    fn build_works_for_production() -> Result<(), Box<dyn Error>> {
+        let (current_directory, application_js_output_path, _) = setup_test()?;
+
+        assert_eq!(fs::metadata(&application_js_output_path).is_ok(), false);
+
+        let config = Config::build(
+            json!({ "environment": "production", "modulePrefix": "frontend" }),
+            HashMap::new(),
+            BuildCache::new()
+        );
+        let (message, _stats) = build(config, false)?; // NOTE: config and lint
+        let build_time_in_ms = Regex::new(r"application\.js in \d+ms")?
+            .find(message.as_str()).unwrap().as_str()
+            .replace("application.js in ", "")
+            .replace("ms", "")
+            .parse::<u32>()?;
+
+        assert!(build_time_in_ms < APPLICATION_JS_BUILD_TIME_THRESHOLD);
+
+        // let application_js_code = fs::read_to_string(application_js_output_path).unwrap();
+        // TODO: content checks
+
+        assert!(fs::metadata(application_js_output_path)?.len() >= APPLICATION_JS_COMPRESSED_TARGET_BYTE_SIZE - 1000);
+        assert!(Regex::new(r"BUILT: application\.js in \d+ms \[\d+.\d+ kB\] Environment: production")?.find(&message).is_some());
+
+        return finalize_test(current_directory);
+    }
+
+    #[test]
+    fn build_works_for_custom_environment() -> Result<(), Box<dyn Error>> {
+        let (current_directory, application_js_output_path, _) = setup_test()?;
+
+        assert_eq!(fs::metadata(&application_js_output_path).is_ok(), false);
+
+        let config = Config::build(
+            json!({ "environment": "custom", "modulePrefix": "my-app" }),
+            HashMap::new(),
+            BuildCache::new()
+        );
+        let (message, _stats) = build(config, false)?; // NOTE: config and lint
+        let build_time_in_ms = Regex::new(r"application\.js in \d+ms")?
+            .find(message.as_str()).unwrap().as_str()
+            .replace("application.js in ", "")
+            .replace("ms", "")
+            .parse::<u32>()?;
+
+        assert!(build_time_in_ms < APPLICATION_JS_BUILD_TIME_THRESHOLD);
+
+        // let application_js_code = fs::read_to_string(application_js_output_path).unwrap();
+        // TODO: content checks
+
+        assert!(fs::metadata(application_js_output_path)?.len() >= APPLICATION_JS_TARGET_BYTE_SIZE - 1000);
+        assert!(Regex::new(r"BUILT: application\.js in \d+ms \[\d+.\d+ kB\] Environment: custom")?.find(&message).is_some());
+
+        return finalize_test(current_directory);
+    }
+
+    #[test]
+    fn build_works_with_application_prepends() -> Result<(), Box<dyn Error>> {
+        let (current_directory, application_js_output_path, _) = setup_test()?;
+
+        assert_eq!(fs::metadata(&application_js_output_path).is_ok(), false);
+
+        let config = Config::build(
+            json!({ "environment": "development", "modulePrefix": "frontend" }),
+            HashMap::new(),
+            BuildCache::new().insert("application_prepends", CODE_TO_PREPEND)
+        );
+        let (message, _stats) = build(config, false)?; // NOTE: config and lint
+        let build_time_in_ms = Regex::new(r"application\.js in \d+ms")?
+            .find(message.as_str()).unwrap().as_str()
+            .replace("application.js in ", "")
+            .replace("ms", "")
+            .parse::<u32>()?;
+        let application_js_code = fs::read_to_string(&application_js_output_path)?;
+
+        assert!(build_time_in_ms < APPLICATION_JS_BUILD_TIME_THRESHOLD);
+        assert!(fs::metadata(application_js_output_path)?.len() >= APPLICATION_JS_TARGET_BYTE_SIZE - 1000);
+        assert!(application_js_code.contains(CODE_TO_PREPEND));
+        assert!(!application_js_code.contains(CODE_TO_APPEND));
+        assert!(Regex::new(r"BUILT: application\.js in \d+ms \[\d+.\d+ kB\] Environment: development")?.find(&message).is_some());
+
+        return finalize_test(current_directory);
+    }
+
+    #[test]
+    fn build_works_with_application_appends() -> Result<(), Box<dyn Error>> {
+        let (current_directory, application_js_output_path, _) = setup_test()?;
+
+        assert_eq!(fs::metadata(&application_js_output_path).is_ok(), false);
+
+        let config = Config::build(
+            json!({ "environment": "development", "modulePrefix": "frontend" }),
+            HashMap::new(),
+            BuildCache::new().insert("application_appends", CODE_TO_APPEND)
+        );
+        let (message, _stats) = build(config, false)?; // NOTE: config and lint
+        let build_time_in_ms = Regex::new(r"application\.js in \d+ms")?
+            .find(message.as_str()).unwrap().as_str()
+            .replace("application.js in ", "")
+            .replace("ms", "")
+            .parse::<u32>()?;
+        let application_js_code = fs::read_to_string(&application_js_output_path)?;
+
+        assert!(build_time_in_ms < APPLICATION_JS_BUILD_TIME_THRESHOLD);
+        assert!(fs::metadata(application_js_output_path)?.len() >= APPLICATION_JS_TARGET_BYTE_SIZE - 1000);
+        assert!(!application_js_code.contains(CODE_TO_PREPEND));
+        assert!(application_js_code.contains(CODE_TO_APPEND));
+        assert!(Regex::new(r"BUILT: application\.js in \d+ms \[\d+.\d+ kB\] Environment: development")?.find(&message).is_some());
+
+        return finalize_test(current_directory);
+    }
+
+    #[test]
+    fn build_works_with_application_appends_and_prepends() -> Result<(), Box<dyn Error>> {
+        let (current_directory, application_js_output_path, _) = setup_test()?;
 
         assert_eq!(fs::metadata(&application_js_output_path).is_ok(), false);
 
@@ -128,119 +285,69 @@ mod tests {
             json!({ "environment": "development", "modulePrefix": "frontend" }),
             HashMap::new(),
             BuildCache::new()
+                .insert("application_prepends", CODE_TO_PREPEND)
+                .insert("application_appends", CODE_TO_APPEND)
         );
-        let (message, stats) = build(config, false)?; // NOTE: config and lint
-        // let time_taken_for_build = message
-            // .match(/application\.js in \d+ms/g)[0]
-            // .replace('application.js in ', '')
-            // .replace('ms', '');
+        let (message, _stats) = build(config, false)?; // NOTE: config and lint
+        let build_time_in_ms = Regex::new(r"application\.js in \d+ms")?
+            .find(message.as_str()).unwrap().as_str()
+            .replace("application.js in ", "")
+            .replace("ms", "")
+            .parse::<u32>()?;
+        let application_js_code = fs::read_to_string(&application_js_output_path)?;
 
-        // t.true(Number(timeTakenForBuild) < APPLICATION_JS_BUILD_TIME_THRESHOLD);
+        assert!(build_time_in_ms < APPLICATION_JS_BUILD_TIME_THRESHOLD);
+        assert!(fs::metadata(application_js_output_path)?.len() >= APPLICATION_JS_TARGET_BYTE_SIZE - 1000);
+        assert!(application_js_code.contains(CODE_TO_PREPEND));
+        assert!(application_js_code.contains(CODE_TO_APPEND));
+        assert!(Regex::new(r"BUILT: application\.js in \d+ms \[\d+.\d+ kB\] Environment: development")?.find(&message).is_some());
 
-        // const applicationJSBuffer = await fs.readFile(APPLICATION_JS_OUTPUT_PATH);
-        // const applicationJSCode = applicationJSBuffer.toString().trim();
-        // content checks
-
-        // t.true(applicationJSBuffer.length >= APPLICATION_JS_TARGET_BYTE_SIZE - 1000);
-        // t.true(stats.size >= APPLICATION_JS_TARGET_BYTE_SIZE - 1000);
-        // console.log('MESSAGE WAS', message);
-        // t.true(/BUILT: application\.js in \d+ms \[12.10 kB\] Environment: development/g.test(message));
-        assert_eq!(true, true);
-
-        env::set_current_dir(&current_directory)?;
-
-        Ok(())
+        return finalize_test(current_directory);
     }
-//
-//     #[test]
-//     fn build_works_for_production() -> io::Result<()> {
-//     }
-//
-//     #[test]
-//     fn build_works_for_custom_environment() -> io::Result<()> {
-//     }
-//
-//     #[test]
-//     fn build_works_with_application_prepends() -> io::Result<()> {
-//     }
-//
-//     #[test]
-//     fn build_works_with_application_appends() -> io::Result<()> {
-//     }
-//
-//     #[test]
-//     fn build_works_with_application_appends_and_prepends() -> io::Result<()> {
-//         t.true(!(await fs.exists(APPLICATION_JS_OUTPUT_PATH)));
-            // const CODE_TO_PREPEND = '(function() { console.log("this is prepending code") })()';
-            // const CODE_TO_APPEND = '(function() { console.log("this is appending code") })()';
-            // const mock = mockProcessCWD(PROJECT_ROOT);
-            // const { message, stats } = await buildApplication(
-            //   {
-            //     ENV: { environment: 'development', modulePrefix: 'frontend' },
-            //     buildCache: { applicationPrepends: CODE_TO_PREPEND, applicationAppends: CODE_TO_APPEND }
-            //   },
-            //   false
-            // );
-            // const timeTakenForBuild = message
-            //   .match(/application\.js in \d+ms/g)[0]
-            //   .replace('application.js in ', '')
-            //   .replace('ms', '');
-
-            // t.true(Number(timeTakenForBuild) < APPLICATION_JS_BUILD_TIME_THRESHOLD);
-
-            // const applicationJSBuffer = await fs.readFile(APPLICATION_JS_OUTPUT_PATH);
-            // const applicationJSCode = applicationJSBuffer.toString().trim();
-
-            // t.true(applicationJSCode.startsWith(CODE_TO_PREPEND));
-            // t.true(applicationJSCode.endsWith(CODE_TO_APPEND));
-            // t.true(applicationJSBuffer.length >= APPLICATION_JS_TARGET_BYTE_SIZE);
-            // t.true(stats.size >= APPLICATION_JS_TARGET_BYTE_SIZE);
-//     }
-// }
-//
-  // t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/main'));
-  // t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/resolver'));
-  // t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/router'));
-  // t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/data/models/application/adapter'));
-  // t.true(
-  //   codeIncludesAMDModule(applicationJSCode, 'frontend/src/data/models/application/serializer')
-  // );
-  // t.true(
-  //   codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/components/welcome-page/component')
-  // );
-  // t.true(
-  //   codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/components/welcome-page/template')
-  // );
-  // t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/routes/application/head'));
-  // t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/routes/application/route'));
-  // t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/routes/index/route'));
-  // t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/routes/index/template'));
-  // t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/routes/not-found/route'));
-  // t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/routes/not-found/template'));
-  // t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/config/environment'));
-  // t.true(
-  //   applicationJSCode.includes(`if (typeof FastBoot !== 'undefined') {
-  //         define('~fastboot/app-factory', ['frontend/src/main', 'frontend/config/environment'], function(App, config) {
-  //           App = App['default'];
-  //           config = config['default'];
-
-  //           return {
-  //             'default': function() {
-  //               return App.create(config.APP);
-  //             }
-  //           };
-  //         });
-  //       }
-
-  //       if (typeof FastBoot === 'undefined' && !runningTests) {
-  //         require('frontend/src/main')['default'].create(require('frontend/config/environment').default);
-  //       }`)
-  // );
-  // t.true(
-  //   !codeIncludesAMDModule(
-  //     applicationJSCode,
-  //     'frontend/src/ui/components/welcome-page/integration-test'
-  //   )
-  // );
-  // t.true(!codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/routes/index/unit-test'));
 }
+
+// t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/main'));
+// t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/resolver'));
+// t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/router'));
+// t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/data/models/application/adapter'));
+// t.true(
+//   codeIncludesAMDModule(applicationJSCode, 'frontend/src/data/models/application/serializer')
+// );
+// t.true(
+//   codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/components/welcome-page/component')
+// );
+// t.true(
+//   codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/components/welcome-page/template')
+// );
+// t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/routes/application/head'));
+// t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/routes/application/route'));
+// t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/routes/index/route'));
+// t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/routes/index/template'));
+// t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/routes/not-found/route'));
+// t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/routes/not-found/template'));
+// t.true(codeIncludesAMDModule(applicationJSCode, 'frontend/config/environment'));
+// t.true(
+//   applicationJSCode.includes(`if (typeof FastBoot !== 'undefined') {
+//         define('~fastboot/app-factory', ['frontend/src/main', 'frontend/config/environment'], function(App, config) {
+//           App = App['default'];
+//           config = config['default'];
+
+//           return {
+//             'default': function() {
+//               return App.create(config.APP);
+//             }
+//           };
+//         });
+//       }
+
+//       if (typeof FastBoot === 'undefined' && !runningTests) {
+//         require('frontend/src/main')['default'].create(require('frontend/config/environment').default);
+//       }`)
+// );
+// t.true(
+//   !codeIncludesAMDModule(
+//     applicationJSCode,
+//     'frontend/src/ui/components/welcome-page/integration-test'
+//   )
+// );
+// t.true(!codeIncludesAMDModule(applicationJSCode, 'frontend/src/ui/routes/index/unit-test'));

@@ -19,4 +19,17 @@ impl BuildCache {
             test_prepends: ""
         }
     }
+    pub fn insert<'a>(mut self, key: &str, value: &'static str) -> Self {
+        match key {
+            "vendor_appends" => { self.vendor_appends = &value },
+            "vendor_prepends" => { self.vendor_prepends = &value },
+            "application_appends" => { self.application_appends = &value },
+            "application_prepends" => { self.application_prepends = &value },
+            "test_appends" => { self.test_appends = &value },
+            "test_prepends" => { self.test_prepends = &value },
+            _ => {}
+        };
+
+        return self;
+    }
 }
