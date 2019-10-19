@@ -1,6 +1,6 @@
 - REPL
 - Default function arguments
-- HashMap literal macros (hashmap!{}, btreemap!{} etc)
+- HashMap literal macros (hashmap!{}, btreemap!{} etc) -> maplit create should be part of rust
 - test reporters
 - test.serial?
 - test afterEach

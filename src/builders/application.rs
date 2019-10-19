@@ -17,14 +17,15 @@ pub fn build(config: Config, _lint: bool) -> Result<(String, fs::Metadata), Box<
     let project_root = &config.project_root.display();
     let output_path = PathBuf::from_str(format!("{}/tmp/assets/application.js", &project_root).as_str())?;
     let application_path = PathBuf::from_str(format!("{}/src", &project_root).as_str())?;
+    let environment = &config.env["environment"].as_str().unwrap();
     let contents = recursive_file_lookup::lookup_for_extensions_and_predicate(
         &application_path,
         vec![".js", ".ts", ".hbs"],
         |entry| { return !entry.file_name().to_str().unwrap().ends_with("-test.js"); }
     ).iter()
-    .map(|file| transpilers::convert_es_module::from_file(file, &config.env["environment"] == "production"))
+    .map(|file| transpilers::convert_es_module::from_file(file, environment == &"production"))
     .collect::<Vec<&str>>()
-    .join("/n");
+    .join("\n");
     let application_name = &config.application_name;
     let stringified_env = &config.env.to_string();
     let code = format!("
@@ -119,7 +120,7 @@ mod tests {
         let application_js_output_path = format!("{}/tmp/assets/application.js", &project_directory);
 
         Paint::disable();
-        fs::remove_file(&application_js_output_path)?;
+        fs::remove_file(&application_js_output_path).unwrap_or_else(|_| {});
         env::set_current_dir(&project_directory)?;
 
         return Ok((current_directory, application_js_output_path, project_directory));
