@@ -1,4 +1,5 @@
 // cargo:rerun-if-changed=build.rs
+// TODO: try using include_bytes! macro
 use core::str::Split;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
