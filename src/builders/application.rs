@@ -17,13 +17,13 @@ pub fn build(config: Config, _lint: bool) -> Result<(String, fs::Metadata), Box<
     let project_root = &config.project_root.display();
     let output_path = PathBuf::from_str(format!("{}/tmp/assets/application.js", &project_root).as_str())?;
     let application_path = PathBuf::from_str(format!("{}/src", &project_root).as_str())?;
-    let environment = &config.env["environment"].as_str().unwrap();
+    let should_minify = vec!["production", "demo"].contains(&config.env["environment"].as_str().unwrap());
     let contents = recursive_file_lookup::lookup_for_extensions_and_predicate(
         &application_path,
         vec![".js", ".ts", ".hbs"],
         |entry| { return !entry.file_name().to_str().unwrap().ends_with("-test.js"); }
     ).iter()
-    .map(|file| transpilers::convert_es_module::from_file(file, environment == &"production"))
+    .map(|file| transpilers::convert_es_module::from_file(file, should_minify))
     .collect::<Vec<&str>>()
     .join("\n");
     let application_name = &config.application_name;

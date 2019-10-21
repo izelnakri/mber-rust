@@ -18,5 +18,5 @@ Folders:
 - tests: Integration tests for mber cargo bin + package.
 
 Files:
-- build.rs: Rust script that gets written before compilation
+- build.rs: Rust script that gets run before compilation
 - index.js: Entrypoint for mber-rust npm package.

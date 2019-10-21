@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
-use std::io::Result;
+use std::result::Result;
+use std::error::Error;
 use std::path::Display;
 use walkdir::WalkDir;
 
@@ -26,60 +27,66 @@ struct CargoPackage {
     version: String,
 }
 
-fn main() -> Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     update_help_command_with_version_from_cargo()?;
-    return inject_fs_hashmap_to_binary_source_code();
+    return inject_new_ember_app_to_source_code_before_compile();
+
+    // return inject_documentation_addon_to_source_code_before_compile();
 }
 
-fn update_help_command_with_version_from_cargo() -> Result<()> {
+fn update_help_command_with_version_from_cargo() -> Result<(), Box<dyn Error>> {
     let package_details: CargoTOML =
-        toml::from_str(fs::read_to_string("Cargo.toml").unwrap().as_str()).unwrap();
+        toml::from_str(fs::read_to_string("Cargo.toml")?.as_str())?;
     let mber_version = package_details.package.version;
-    let help_code = fs::read_to_string("src/commands/help.rs").unwrap();
+    let help_code = fs::read_to_string("src/commands/help.rs")?;
     let help_code_version_line = help_code
         .lines()
         .find(|line| line.trim_start().starts_with("let version ="))
         .expect("cant find version line!")
         .trim();
 
-    return fs::write(
+    return Ok(fs::write(
         "src/commands/help.rs",
         help_code.replace(
             help_code_version_line,
             format!("let version = \"{}\";", mber_version).as_str(),
         ),
-    );
+    )?);
 }
 
-fn inject_fs_hashmap_to_binary_source_code() -> Result<()> {
+fn inject_new_ember_app_to_source_code_before_compile() -> Result<(), Box<dyn Error>> {
     let walker = WalkDir::new("ember-app-boilerplate").into_iter().filter_entry(|entry| {
-        return entry.path().display().to_string().ne("ember-app-boilerplate/node_modules");
+        return match entry.path().display().to_string().as_str() {
+            "ember-app-boilerplate/node_modules" | "ember-app-boilerplate/package-lock.json" |
+            "ember-app-boilerplate/tmp" => false,
+            _ => true
+        }
     });
     let mut file_system_map: RefCell<HashMap<String, KeyValue>> = RefCell::new(HashMap::new());
 
     for entry in walker {
-        let entry = entry.unwrap();
+        let entry = entry?;
 
         match entry.file_type().is_dir() {
-            true => {
-                check_and_set_directory_map_to_map(&mut file_system_map, entry.path().display())
-            }
-            false => {
-                find_directory_map_and_insert_file(&mut file_system_map, entry.path().display())
-            }
+            true => check_and_set_directory_map_to_map(&mut file_system_map, entry.path().display()),
+            false => find_directory_map_and_insert_file(&mut file_system_map, entry.path().display())
         }
     }
 
-    let json_string = serde_json::to_string(&file_system_map).unwrap();
+    let json_string = serde_json::to_string(&file_system_map)?;
 
-    return fs::write(
-        "src/utils/ember_app_boilerplate.rs",
+    return Ok(fs::write(
+        "src/injections/new_ember_application.rs",
         format!(
             "pub fn as_string() -> &'static str {{\nreturn r##\"\n{}\"##;\n}}",
             json_string
         ),
-    );
+    )?);
 }
+
+// fn inject_documentation_addon_to_source_code_before_compile() -> Result<(), Box<dyn Error>> {
+//     return Ok(());
+// }
 
 fn check_and_set_directory_map_to_map(
     file_system_map: &mut RefCell<HashMap<String, KeyValue>>,

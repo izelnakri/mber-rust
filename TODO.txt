@@ -1,4 +1,8 @@
-Check Ratel and swc transpilers
+- write ember code injections
+
+- Check swc and ratel transpilers
+- write all babel addons
+- compiles hbs templates
 
 swc Compiler high-level API is private inside node-swc/native
 

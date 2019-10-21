@@ -1,6 +1,6 @@
 // TODO: rewrite this in tokio
 use super::super::utils::console;
-use super::super::utils::ember_app_boilerplate;
+use super::super::injections::new_ember_application;
 use mustache::MapBuilder;
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -41,7 +41,7 @@ pub fn run() -> std::io::Result<()> {
     let current_directory = path.display().to_string();
     let application_directory = format!("{}/{}", &current_directory, &application_name);
     let fs_hashmap: HashMap<String, KeyValue> =
-        serde_json::from_str(ember_app_boilerplate::as_string()).unwrap();
+        serde_json::from_str(new_ember_application::as_string()).unwrap();
 
     create_nested_directory_and_files_from_hashmap(
         &fs_hashmap,

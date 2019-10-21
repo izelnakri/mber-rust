@@ -2,6 +2,7 @@ mod commands;
 pub mod types;
 pub mod utils;
 mod generators;
+mod injections;
 
 use std::io::{Error, ErrorKind, Result};
 use yansi::Paint;
