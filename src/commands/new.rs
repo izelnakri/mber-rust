@@ -14,7 +14,7 @@ use yansi::Paint;
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 enum KeyValue {
-    String(String),
+    Vec(Vec<u8>),
     RefCell(HashMap<String, KeyValue>),
 }
 
@@ -85,7 +85,7 @@ fn create_nested_directory_and_files_from_hashmap(
         };
 
         match value {
-            KeyValue::String(content) => {
+            KeyValue::Vec(content) => {
                 fs::write(&target_path, content)
                     .expect(format!("couldnt write to {}", target_path).as_str());
                 ();

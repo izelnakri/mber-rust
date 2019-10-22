@@ -1,5 +1,4 @@
 // cargo:rerun-if-changed=build.rs
-// TODO: try using include_bytes! macro
 use core::str::Split;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
@@ -13,7 +12,7 @@ use walkdir::WalkDir;
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 enum KeyValue {
-    String(String),
+    Vec(Vec<u8>),
     RefCell(HashMap<String, KeyValue>),
 }
 
@@ -29,9 +28,9 @@ struct CargoPackage {
 
 fn main() -> Result<(), Box<dyn Error>> {
     update_help_command_with_version_from_cargo()?;
-    return inject_new_ember_app_to_source_code_before_compile();
+    inject_documentation_addon_to_source_code_before_compile()?;
 
-    // return inject_documentation_addon_to_source_code_before_compile();
+    return inject_new_ember_app_to_source_code_before_compile();
 }
 
 fn update_help_command_with_version_from_cargo() -> Result<(), Box<dyn Error>> {
@@ -55,24 +54,13 @@ fn update_help_command_with_version_from_cargo() -> Result<(), Box<dyn Error>> {
 }
 
 fn inject_new_ember_app_to_source_code_before_compile() -> Result<(), Box<dyn Error>> {
-    let walker = WalkDir::new("ember-app-boilerplate").into_iter().filter_entry(|entry| {
+    let file_system_map = build_hashmap_from_file_directory_with_filter("ember-app-boilerplate", |entry| {
         return match entry.path().display().to_string().as_str() {
             "ember-app-boilerplate/node_modules" | "ember-app-boilerplate/package-lock.json" |
             "ember-app-boilerplate/tmp" => false,
             _ => true
-        }
+        };
     });
-    let mut file_system_map: RefCell<HashMap<String, KeyValue>> = RefCell::new(HashMap::new());
-
-    for entry in walker {
-        let entry = entry?;
-
-        match entry.file_type().is_dir() {
-            true => check_and_set_directory_map_to_map(&mut file_system_map, entry.path().display()),
-            false => find_directory_map_and_insert_file(&mut file_system_map, entry.path().display())
-        }
-    }
-
     let json_string = serde_json::to_string(&file_system_map)?;
 
     return Ok(fs::write(
@@ -84,9 +72,35 @@ fn inject_new_ember_app_to_source_code_before_compile() -> Result<(), Box<dyn Er
     )?);
 }
 
-// fn inject_documentation_addon_to_source_code_before_compile() -> Result<(), Box<dyn Error>> {
-//     return Ok(());
-// }
+fn inject_documentation_addon_to_source_code_before_compile() -> Result<(), Box<dyn Error>> {
+    let file_system_map = build_hashmap_from_file_directory_with_filter("_vendor/mber-documentation", |_| { return true });
+    let json_string = serde_json::to_string(&file_system_map)?;
+
+    return Ok(fs::write(
+        "src/injections/documentation.rs",
+        format!(
+            "pub fn as_string() -> &'static str {{\nreturn r##\"\n{}\"##;\n}}",
+            json_string
+        ),
+    )?);
+}
+
+fn build_hashmap_from_file_directory_with_filter<F>(directory_string: &str, filter_function: F) -> RefCell<HashMap<String, KeyValue>>
+    where F: FnMut(&walkdir::DirEntry) -> bool {
+    let walker = WalkDir::new(directory_string).into_iter().filter_entry(filter_function);
+    let mut file_system_map: RefCell<HashMap<String, KeyValue>> = RefCell::new(HashMap::new());
+
+    for entry in walker {
+        let entry = entry.unwrap();
+
+        match entry.file_type().is_dir() {
+            true => check_and_set_directory_map_to_map(&mut file_system_map, entry.path().display()),
+            false => find_directory_map_and_insert_file(&mut file_system_map, entry.path().display())
+        }
+    }
+
+    return file_system_map;
+}
 
 fn check_and_set_directory_map_to_map(
     file_system_map: &mut RefCell<HashMap<String, KeyValue>>,
@@ -132,7 +146,6 @@ fn get_from_directory_map_from_map<'a>(
     );
 }
 
-// TODO: currently cant embed non-UTF-8 to json(png files etc)
 fn find_directory_map_and_insert_file(
     file_system_map: &mut RefCell<HashMap<String, KeyValue>>,
     path: Display,
@@ -141,11 +154,10 @@ fn find_directory_map_and_insert_file(
     let file_name = &path_string.split("/").last().unwrap();
     let path_list = &path_string.split("/");
     let directory_path_index = &path_list.clone().count().wrapping_sub(1);
-    let contents =
-        fs::read_to_string(&path_string).expect(format!("couldnt read {}", path_string).as_str());
+    let contents = fs::read(&path_string).expect(format!("couldnt read {}", path_string).as_str());
     let mut full_map = file_system_map.borrow_mut();
     let target_hash_map =
         get_from_directory_map_from_map(&mut full_map, &path_list, *directory_path_index);
 
-    target_hash_map.insert(file_name.to_string(), KeyValue::String(contents));
+    target_hash_map.insert(file_name.to_string(), KeyValue::Vec(contents));
 }
