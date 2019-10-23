@@ -23,7 +23,7 @@ function buildTestVendorCSS() {
   return new Promise(async resolve => {
     const PROJECT_PATH = await findProjectRoot();
     const MODULE_PATH = `${PROJECT_PATH}/node_modules`;
-    const VENDOR_PATH = `${PROJECT_PATH}/vendor`;
+    const VENDOR_PATH = `${PROJECT_PATH}/_vendor`;
 
     Console.log(chalk.yellow("BUILDING:"), CSS_FILENAME);
 
@@ -68,7 +68,7 @@ function buildTestVendorJS() {
     Console.log(chalk.yellow("BUILDING:"), JS_FILENAME);
     const PROJECT_PATH = await findProjectRoot();
     const MODULE_PATH = `${PROJECT_PATH}/node_modules`;
-    const VENDOR_PATH = `${PROJECT_PATH}/vendor`;
+    const VENDOR_PATH = `${PROJECT_PATH}/_vendor`;
     const timer = countTime();
 
     return Promise.all([
@@ -88,10 +88,6 @@ function buildTestVendorJS() {
         "ember-cli-test-loader/test-support",
         "ember-cli-test-loader/addon-test-support"
       ),
-      importAddonFolderToAMD(
-        "ember-cli-qunit",
-        "ember-cli-test-loader/addon-test-support"
-      ), // NOTE: check if this is needed
       importAddonFolderToAMD(
         "ember-qunit",
         "ember-qunit/addon-test-support/ember-qunit"

@@ -16,7 +16,7 @@ function build(environment, options = { excludeEmberData: false }) {
 
     const timer = countTime();
     const PROJECT_PATH = await findProjectRoot();
-    const OUTPUT_PATH = `${PROJECT_PATH}/vendor/${FILENAME}.js`;
+    const OUTPUT_PATH = `${PROJECT_PATH}/_vendor/${FILENAME}.js`;
 
     return Promise.all(await readBuildFiles(PROJECT_PATH, environment, options))
       .then(fileContents => {

@@ -41,7 +41,7 @@ pub fn run() -> std::io::Result<()> {
     let current_directory = path.display().to_string();
     let application_directory = format!("{}/{}", &current_directory, &application_name);
     let fs_hashmap: HashMap<String, KeyValue> =
-        serde_json::from_str(new_ember_application::as_string()).unwrap();
+        serde_json::from_str(new_ember_application::as_str()).unwrap();
 
     create_nested_directory_and_files_from_hashmap(
         &fs_hashmap,

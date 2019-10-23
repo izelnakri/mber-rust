@@ -12,7 +12,7 @@ const removeFetch = `
 async function build() {
   const PROJECT_PATH = await findProjectRoot();
   const MODULE_PATH = `${PROJECT_PATH}/node_modules`;
-  const VENDOR_PATH = `${PROJECT_PATH}/vendor`;
+  const VENDOR_PATH = `${PROJECT_PATH}/_vendor`;
 
   return Promise.all([
     fs.readFile(`${MODULE_PATH}/whatwg-fetch/dist/fetch.umd.js`),

@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::iter::Iterator;
-use walkdir::WalkDir;
-use walkdir::DirEntry;
+use walkdir::{DirEntry, WalkDir};
 
 pub fn lookup_for_extensions(directory: &Path, extensions: Vec<&str>) -> Vec<PathBuf> {
     return WalkDir::new(directory).into_iter().filter_map(|e| {

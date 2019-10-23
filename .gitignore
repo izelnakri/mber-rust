@@ -7,3 +7,5 @@ ember-app-boilerplate/tmp
 **/*.rs.bk
 src/injections/*
 !src/injections/mod.rs
+_vendor/*
+!_vendor/mber-documentation/*

@@ -1,3 +1,6 @@
+scripts/memserver/initializers/ajax.js references
+ember-cli-qunit addon not there anymore on scripts/build-test-support.js
+
 - write ember code injections
 
 - Check swc and ratel transpilers

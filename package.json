@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "mber-rust",
   "version": "0.1.9",
   "description": "",
@@ -7,13 +8,13 @@
   "license": "MIT",
   "scripts": {
     "install": "neon build --release",
-    "build:loader": "cp ./node_modules/loader.js/dist/loader/loader.js ./vendor",
-    "build:ember-source": "cp ./node_modules/ember-source/dist/ember-template-compiler.js ./vendor && cp ./node_modules/ember-source/dist/ember-testing.js ./vendor",
+    "build:loader": "cp ./node_modules/loader.js/dist/loader/loader.js ./_vendor",
+    "build:ember-source": "cp ./node_modules/ember-source/dist/ember-template-compiler.js ./_vendor && cp ./node_modules/ember-source/dist/ember-testing.js ./_vendor",
     "build:full-ember": "node --experimental-modules scripts/build-ember-base.js",
     "build:no-ember-data": "node --experimental-modules scripts/build-ember-base.js --exclude-ember-data",
     "build:test-support": "node --experimental-modules scripts/build-test-support.js",
     "build:memserver": "node --experimental-modules scripts/build-memserver.js",
-    "build:fastboot-modules": "node --experimental-modules scripts/transpile-fastboot-modules.js",
+    "build:fastboot-modules": "node --experimental-modules scripts/build-fastboot-modules.js",
     "build": "npm run build:loader && npm run build:ember-source && npm run build:full-ember && npm run build:no-ember-data && npm run build:test-support && npm run build:memserver && npm run build:fastboot-modules"
   },
   "dependencies": {
@@ -21,17 +22,36 @@
     "neon-cli": "^0.3.1"
   },
   "devDependencies": {
+    "@ember-data/adapter": "3.13.1",
+    "@ember-data/canary-features": "3.13.1",
+    "@ember-data/model": "3.13.1",
+    "@ember-data/serializer": "3.13.1",
+    "@ember-data/store": "3.13.1",
+    "@ember/ordered-set": "2.0.3",
+    "@glimmer/di": "0.2.1",
+    "@glimmer/resolver": "0.4.3",
     "ansi-colors": "^4.1.1",
+    "ember-cli-fastboot": "^2.2.1",
+    "ember-data": "3.13.1",
+    "ember-inflector": "3.0.1",
+    "ember-load-initializers": "2.1.0",
+    "ember-qunit": "^4.5.1",
+    "ember-resolver": "5.3.0",
     "ember-source": "3.13.2",
     "eslint": "^6.5.1",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-plugin-import": "^2.18.2",
     "fastboot": "^2.0.3",
     "fs-extra": "^8.1.0",
+    "klaw": "^3.0.0",
     "loader.js": "^4.7.0",
     "memserver": "^1.2.10",
+    "ora": "^4.0.2",
+    "qunit": "^2.9.3",
     "sass": "^1.23.0",
-    "terser": "^4.3.9"
+    "terser": "^4.3.9",
+    "through2": "^3.0.1",
+    "whatwg-fetch": "^3.0.0"
   },
   "repository": {
     "type": "git",
@@ -44,5 +64,8 @@
     "native/src",
     "native/build.rs",
     "native/artifacts.json"
-  ]
+  ],
+  "volta": {
+    "node": "12.4.0"
+  }
 }

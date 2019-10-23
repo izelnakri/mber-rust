@@ -66,7 +66,7 @@ fn inject_new_ember_app_to_source_code_before_compile() -> Result<(), Box<dyn Er
     return Ok(fs::write(
         "src/injections/new_ember_application.rs",
         format!(
-            "pub fn as_string() -> &'static str {{\nreturn r##\"\n{}\"##;\n}}",
+            "pub fn as_str() -> &'static str {{\nreturn r##\"\n{}\"##;\n}}",
             json_string
         ),
     )?);
@@ -79,7 +79,7 @@ fn inject_documentation_addon_to_source_code_before_compile() -> Result<(), Box<
     return Ok(fs::write(
         "src/injections/documentation.rs",
         format!(
-            "pub fn as_string() -> &'static str {{\nreturn r##\"\n{}\"##;\n}}",
+            "pub fn as_str() -> &'static str {{\nreturn r##\"\n{}\"##;\n}}",
             json_string
         ),
     )?);

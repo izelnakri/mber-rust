@@ -16,7 +16,10 @@ Folders:
 - native: Rust code that runs inside node.js.
 - src: Rust code used by mber cargo bin + package.
 - tests: Integration tests for mber cargo bin + package.
+- `_vendor`: holds certain addons that ship with mber build system, kept raw but gets injected and transpiled during compilation or runtime of mber binary.
+- scripts: certain npm/node scripts to build ember packages from npm
 
 Files:
 - build.rs: Rust script that gets run before compilation
 - index.js: Entrypoint for mber-rust npm package.
+- package.json: holds dependencies for mber-rust npm package and devDependencies for mber development scripts
