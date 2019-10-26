@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
-// use serde_json;
 use std::collections::HashMap;
-// use std::borrow::BorrowMut;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
@@ -9,27 +7,6 @@ pub enum KeyValue {
     Vec(Vec<u8>),
     RefCell(HashMap<String, KeyValue>),
 }
-
-pub fn lookup_for_extensions(hashmap: HashMap<String, String>, extensions: Vec<&str>) -> HashMap<String, String> {
-    return hashmap.into_iter()
-        .filter(|(key, _value)| extensions.iter().any(|extension| key.ends_with(extension)))
-        .collect(); // as hashmap
-}
-
-// pub fn lookup_for_extensions_and_predicate<F>(injection_str: &str, extensions: Vec<&str>, predicate: F) -> HashMap<String, String> // TODO: add predicate? starts_with?
-//     where F: Fn(&str) -> bool {
-//     // return WalkDir::new(directory).into_iter().filter_map(|e| {
-//     //     let entry = e.unwrap();
-//     //     let entry_correct_extension = extensions.iter()
-//     //         .any(|extension| entry.file_name().to_str().unwrap().ends_with(extension));
-
-
-//     //     return match entry_correct_extension && predicate(&entry) {
-//     //         true => Some(entry.into_path()),
-//     //         false => None
-//     //     };
-//     // }).collect();
-// }
 
 pub fn flatten_fs_hashmap(fs_hashmap: HashMap<String, KeyValue>, parent_folders: Vec<String>) -> HashMap<String, String> {
     return fs_hashmap.into_iter().fold(HashMap::new(), |mut result, (key, value)| {
@@ -54,6 +31,20 @@ pub fn flatten_fs_hashmap(fs_hashmap: HashMap<String, KeyValue>, parent_folders:
     });
 }
 
+pub fn lookup_for_extensions(hashmap: HashMap<String, String>, extensions: Vec<&str>) -> HashMap<String, String> {
+    return hashmap.into_iter()
+        .filter(|(key, _value)| extensions.iter().any(|extension| key.ends_with(extension)))
+        .collect();
+}
+
+pub fn lookup_for_extensions_and_predicate<F>(hashmap: HashMap<String, String>, extensions: Vec<&str>, predicate: F)
+    -> HashMap<String, String> where F: Fn(&str) -> bool {
+    return hashmap.into_iter()
+        .filter(|(key, _value)| extensions.iter().any(|extension| key.ends_with(extension)) && predicate(key))
+        .collect();
+}
+
+
 #[cfg(test)]
 mod tests {
     use std::io;
@@ -62,10 +53,10 @@ mod tests {
     use super::super::super::injections::documentation;
 
     #[test]
-    fn lookup_for_extensions_works_for_js_and_hbs() -> io::Result<()> {
+    fn lookup_for_extensions_works_for_js_and_hbs() {
         let documentation_hashmap: HashMap<String, KeyValue> = serde_json::from_str(documentation::as_str()).unwrap();
         let flat_documentation_hashmap = flatten_fs_hashmap(documentation_hashmap, vec![]);
-        let result = lookup_for_extensions(flat_documentation_hashmap.clone(), vec!["js", "hbs"]); // TODO: maybe scope it to /src only?
+        let result = lookup_for_extensions(flat_documentation_hashmap.clone(), vec!["js", "hbs"]);
         let result_keys = result.keys().map(|k| k.as_str()).collect::<Vec<&str>>();
 
         assert_eq!(result_keys.len(), 35);
@@ -93,19 +84,40 @@ mod tests {
         assert!(sub_directory_hbs_keys.contains(&"_vendor/mber-documentation/src/ui/components/docs-viewer/navigation/template.hbs"));
         assert!(sub_directory_hbs_keys.contains(&"_vendor/mber-documentation/src/ui/components/docs-viewer/navigation/title/template.hbs"));
         assert!(sub_directory_hbs_keys.contains(&"_vendor/mber-documentation/src/ui/components/docs-viewer/navigation/link/template.hbs"));
-
-        Ok(())
     }
 
-    // #[test]
-    // fn lookup_for_extensions_works_when_there_are_no_reference_files() -> io::Result<()> {
-    // } // NOTE: run on .hbs on some sub directory
+    #[test]
+    fn lookup_for_extensions_works_when_there_are_no_reference_files() {
+        let documentation_hashmap: HashMap<String, KeyValue> = serde_json::from_str(documentation::as_str()).unwrap();
+        let flat_documentation_hashmap = flatten_fs_hashmap(documentation_hashmap, vec![]);
+        let sub_directory: HashMap<String, String> = flat_documentation_hashmap.into_iter()
+            .filter(|(key, _)| key.starts_with("_vendor/mber-documentation/vendor"))
+            .collect();
 
-    // #[test]
-    // fn lookup_for_extensions_and_predicate_works_for_js_and_hbs() -> io::Result<()> {
-    // }
+        assert_eq!(lookup_for_extensions(sub_directory.clone(), vec!["hbs"]), HashMap::new());
+    }
 
-    // #[test]
-    // fn lookup_for_extensions_and_predicate_works_when_there_are_no_reference_files() -> io::Result<()> {
-    // }
+    #[test]
+    fn lookup_for_extensions_and_predicate_works_for_js_and_hbs() {
+        let documentation_hashmap: HashMap<String, KeyValue> = serde_json::from_str(documentation::as_str()).unwrap();
+        let flat_documentation_hashmap = flatten_fs_hashmap(documentation_hashmap, vec![]);
+        let result = lookup_for_extensions_and_predicate(flat_documentation_hashmap.clone(), vec!["js", "hbs"], |filename| {
+            return filename.starts_with("_vendor/mber-documentation/src/ui/components/docs-header");
+        });
+        let result_keys = result.keys().map(|k| k.as_str()).collect::<Vec<&str>>();
+
+        assert_eq!(result_keys.len(), 4);
+        assert!(result_keys.contains(&"_vendor/mber-documentation/src/ui/components/docs-header/component.js"));
+        assert!(result_keys.contains(&"_vendor/mber-documentation/src/ui/components/docs-header/link/component.js"));
+        assert!(result_keys.contains(&"_vendor/mber-documentation/src/ui/components/docs-header/template.hbs"));
+
+        let js_result = lookup_for_extensions_and_predicate(flat_documentation_hashmap, vec!["js"], |filename| {
+            return filename.starts_with("_vendor/mber-documentation/src/ui/components/docs-header");
+        });
+        let js_result_keys = js_result.keys().map(|k| k.as_str()).collect::<Vec<&str>>();
+
+        assert_eq!(js_result_keys.len(), 2);
+        assert!(js_result_keys.contains(&"_vendor/mber-documentation/src/ui/components/docs-header/component.js"));
+        assert!(js_result_keys.contains(&"_vendor/mber-documentation/src/ui/components/docs-header/link/component.js"));
+    }
 }
