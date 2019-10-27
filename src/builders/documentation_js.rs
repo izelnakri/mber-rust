@@ -23,8 +23,8 @@ pub fn build(config: Config, _lint: bool) -> Result<(String, fs::Metadata), Box<
     let contents = recursive_file_lookup::lookup_for_extensions(
         &documentation_path,
         vec![".js", ".ts", ".hbs"]
-    ).iter()
-    .map(|file| transpilers::convert_es_module::from_file(file, should_minify))
+    ).into_iter()
+    .map(|file| transpilers::convert_es_module::from_file(&file, should_minify))
     .collect::<Vec<&str>>()
     .join("\n");
 

@@ -21,7 +21,7 @@ pub fn build(config: Config) -> Result<(String, fs::Metadata), Box<dyn Error>> {
         &application_path,
         vec![".scss"],
         |entry| { return !entry.file_name().to_str().unwrap().contains("/src/ui/styles"); }
-    ).iter()
+    ).into_iter()
     .map(|file_name| fs::read_to_string(file_name).unwrap())
     .collect::<Vec<String>>();
     let output_style = match vec!["production", "demo"].contains(&config.env["environment"].as_str().unwrap()) {

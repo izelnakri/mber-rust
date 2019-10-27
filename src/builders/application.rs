@@ -22,8 +22,8 @@ pub fn build(config: Config, _lint: bool) -> Result<(String, fs::Metadata), Box<
         &application_path,
         vec![".js", ".ts", ".hbs"],
         |entry| { return !entry.file_name().to_str().unwrap().ends_with("-test.js"); }
-    ).iter()
-    .map(|file| transpilers::convert_es_module::from_file(file, should_minify))
+    ).into_iter()
+    .map(|file| transpilers::convert_es_module::from_file(&file, should_minify))
     .collect::<Vec<&str>>()
     .join("\n");
     let application_name = &config.application_name;

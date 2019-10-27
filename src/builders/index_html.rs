@@ -56,7 +56,7 @@ pub fn build_documentation_html(html_path: &str, config: Config) -> Result<Strin
 }
 
 fn transpile_mustache_template(template_path: &str, index_html_injections: &HashMap<String, String>) -> Result<String, Box<dyn Error>> {
-    let dynamic_data = &index_html_injections.iter()
+    let dynamic_data = &index_html_injections.into_iter()
         .fold(MapBuilder::new(), |result, (injection_key, injection_value)| {
             return result.insert_str(injection_key, injection_value);
         }).build();
