@@ -1,6 +1,6 @@
 // cargo:rerun-if-changed=build.rs
 use core::str::Split;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
@@ -9,12 +9,9 @@ use std::error::Error;
 use std::path::Display;
 use walkdir::WalkDir;
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-enum KeyValue {
-    Vec(Vec<u8>),
-    RefCell(HashMap<String, KeyValue>),
-}
+#[path = "src/utils/walk_injection.rs"] mod walk_injection;
+
+use walk_injection::KeyValue;
 
 #[derive(Deserialize)]
 struct CargoTOML {
@@ -28,7 +25,7 @@ struct CargoPackage {
 
 fn main() -> Result<(), Box<dyn Error>> {
     update_help_command_with_version_from_cargo()?;
-    inject_documentation_addon_to_source_code_before_compile()?;
+    inject_documentation_addon_to_source_code_before_compile()?; // NOTE: hashmap has to be flat! so pathString -> content
 
     return inject_new_ember_app_to_source_code_before_compile();
 }
@@ -74,7 +71,8 @@ fn inject_new_ember_app_to_source_code_before_compile() -> Result<(), Box<dyn Er
 
 fn inject_documentation_addon_to_source_code_before_compile() -> Result<(), Box<dyn Error>> {
     let file_system_map = build_hashmap_from_file_directory_with_filter("_vendor/mber-documentation", |_| { return true });
-    let json_string = serde_json::to_string(&file_system_map)?;
+    let flat_documentation_fs_hashmap = walk_injection::flatten_fs_hashmap_in_binary(file_system_map.into_inner(), vec![]);
+    let json_string = serde_json::to_string(&flat_documentation_fs_hashmap)?;
 
     return Ok(fs::write(
         "src/injections/documentation.rs",

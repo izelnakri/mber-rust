@@ -31,13 +31,19 @@ pub fn flatten_fs_hashmap(fs_hashmap: HashMap<String, KeyValue>, parent_folders:
     });
 }
 
+pub fn flatten_fs_hashmap_in_binary(fs_hashmap: HashMap<String, KeyValue>, parent_folders: Vec<String>) -> HashMap<String, Vec<u8>> {
+    return flatten_fs_hashmap(fs_hashmap, parent_folders).into_iter()
+        .map(|(key, value)| { return (key, value.into_bytes()); })
+        .collect();
+}
+
 pub fn lookup_for_extensions(hashmap: HashMap<String, String>, extensions: Vec<&str>) -> HashMap<String, String> {
     return hashmap.into_iter()
         .filter(|(key, _value)| extensions.iter().any(|extension| key.ends_with(extension)))
         .collect();
 }
 
-pub fn lookup_for_extensions_and_predicate<F>(hashmap: HashMap<String, String>, extensions: Vec<&str>, predicate: F)
+pub fn lookup_for_extensions_with_predicate<F>(hashmap: HashMap<String, String>, extensions: Vec<&str>, predicate: F)
     -> HashMap<String, String> where F: Fn(&str) -> bool {
     return hashmap.into_iter()
         .filter(|(key, _value)| extensions.iter().any(|extension| key.ends_with(extension)) && predicate(key))
@@ -98,10 +104,10 @@ mod tests {
     }
 
     #[test]
-    fn lookup_for_extensions_and_predicate_works_for_js_and_hbs() {
+    fn lookup_for_extensions_with_predicate_works_for_js_and_hbs() {
         let documentation_hashmap: HashMap<String, KeyValue> = serde_json::from_str(documentation::as_str()).unwrap();
         let flat_documentation_hashmap = flatten_fs_hashmap(documentation_hashmap, vec![]);
-        let result = lookup_for_extensions_and_predicate(flat_documentation_hashmap.clone(), vec!["js", "hbs"], |filename| {
+        let result = lookup_for_extensions_with_predicate(flat_documentation_hashmap.clone(), vec!["js", "hbs"], |filename| {
             return filename.starts_with("_vendor/mber-documentation/src/ui/components/docs-header");
         });
         let result_keys = result.keys().map(|k| k.as_str()).collect::<Vec<&str>>();
@@ -111,7 +117,7 @@ mod tests {
         assert!(result_keys.contains(&"_vendor/mber-documentation/src/ui/components/docs-header/link/component.js"));
         assert!(result_keys.contains(&"_vendor/mber-documentation/src/ui/components/docs-header/template.hbs"));
 
-        let js_result = lookup_for_extensions_and_predicate(flat_documentation_hashmap, vec!["js"], |filename| {
+        let js_result = lookup_for_extensions_with_predicate(flat_documentation_hashmap, vec!["js"], |filename| {
             return filename.starts_with("_vendor/mber-documentation/src/ui/components/docs-header");
         });
         let js_result_keys = js_result.keys().map(|k| k.as_str()).collect::<Vec<&str>>();
