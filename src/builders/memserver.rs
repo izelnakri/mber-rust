@@ -26,12 +26,12 @@ pub fn build(config: Config, _lint: bool) -> Result<(String, fs::Metadata), Box<
     .map(|file| transpilers::convert_es_module::from_file(&file, should_minify))
     .collect::<Vec<&str>>()
     .join("\n");
-    let memserver_vendor_code = include_bytes!("../../_vendor/memserver.js");
-    let memserver_instance_initializer_code = transpilers::convert_es_module::from_string(
-        include_bytes!("../../_vendor/mber-memserver/instance-initializer/memserver.js"),
-        project_root, // NOTE: this should change
+    let memserver_vendor_code = String::from_utf8(include_bytes!("../../_vendor/memserver.js").to_vec())?;
+    let memserver_instance_initializer_code = String::from(transpilers::convert_es_module::from_string(
+        String::from_utf8(include_bytes!("../../_vendor/mber-memserver/instance-initializer/memserver.js").to_vec())?.as_str(),
+        &project_root.to_string(),
         should_minify
-    );
+    ));
 
     fs::write(&output_path, format!(
         "define = window.define; {}",
@@ -100,7 +100,7 @@ mod tests {
             HashMap::new(),
             BuildCache::new()
         );
-        let (message, _stats) = build(config, false)?; // note: config and lint
+        let (message, _stats) = build(config, false)?; // NOTE: config and lint
         let build_time_in_ms = Regex::new(r"memserver\.js in \d+ms")?
             .find(message.as_str()).unwrap().as_str()
             .replace("memserver.js in ", "")
