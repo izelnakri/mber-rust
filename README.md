@@ -23,3 +23,8 @@ Files:
 - build.rs: Rust script that gets run before compilation
 - index.js: Entrypoint for mber-rust npm package.
 - package.json: holds dependencies for mber-rust npm package and devDependencies for mber development scripts
+
+Required system software:
+- Rust
+- node.js
+- festival(if you want your build system to warn you on failed builds via tts[text-to-speech])

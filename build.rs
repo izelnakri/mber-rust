@@ -25,7 +25,7 @@ struct CargoPackage {
 
 fn main() -> Result<(), Box<dyn Error>> {
     update_help_command_with_version_from_cargo()?;
-    inject_documentation_addon_to_source_code_before_compile()?; // NOTE: hashmap has to be flat! so pathString -> content
+    inject_documentation_addon_to_source_code_before_compile()?;
 
     return inject_new_ember_app_to_source_code_before_compile();
 }
