@@ -2,6 +2,11 @@ scripts/memserver/initializers/ajax.js references
 ember-cli-qunit addon not there anymore on scripts/build-test-support.js
 
 - write ember code injections
+- write import_addon_folder_to_amd implementation
+- write actual swc convertion
+- runners(file-watcher, test-runner, start-http-server)
+- thread pool implementation
+- making fs calls async
 
 - Check swc and ratel transpilers
 - write all babel addons

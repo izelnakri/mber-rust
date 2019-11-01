@@ -7,15 +7,15 @@
 
 #[derive(Debug)]
 pub struct CLIArguments {
-    env: &'static str,
-    port: u16,
+    pub env: &'static str,
+    pub port: u16,
     // proxy: Option<Proxy>,
-    server: bool,
-    fastboot: bool,
-    watch: bool,
-    debug: bool,
-    talk: bool,
-    testing: bool // NOTE: is this necessary?
+    pub server: bool,
+    pub fastboot: bool,
+    pub watch: bool,
+    pub debug: bool,
+    pub talk: bool,
+    pub testing: bool // NOTE: is this necessary?
 }
 
 impl CLIArguments {
