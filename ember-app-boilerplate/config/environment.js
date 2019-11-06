@@ -1,36 +1,38 @@
 export default function(environment) {
   let ENV = {
-    modulePrefix: '{{applicationName}}',
+    modulePrefix: "{{applicationName}}",
     environment,
-    rootURL: '/',
-    locationType: 'auto',
+    rootURL: "/",
+    locationType: "auto",
     documentation: {
-      path: '/styleguide',
-      enabled: ['development', 'test', 'memserver', 'demo'].includes(environment),
+      path: "/styleguide",
+      enabled: ["development", "test", "memserver", "demo"].includes(
+        environment
+      )
     },
-    'ember-resolver': {
+    "ember-resolver": {
       features: {
         EMBER_RESOLVER_MODULE_UNIFICATION: true
       }
     },
     excludeEmberData: false,
     fastboot: {
-      hostWhitelist: ['localhost:1234', 'localhost:3000', /^localhost:\d+$/]
+      hostWhitelist: ["localhost:1234", "localhost:3000", /^localhost:\d+$/]
     },
-    'ember-devtools': {
+    "ember-devtools": {
       global: true,
-      enabled: ['development', 'memserver', 'test'].includes(environment)
+      enabled: ["development", "memserver", "test"].includes(environment)
     },
     memserver: {
-      minify: ['demo', 'production'].includes(environment),
-      enabled: ['demo', 'test', 'memserver'].includes(environment)
+      minify: ["demo", "production"].includes(environment),
+      enabled: ["demo", "test", "memserver"].includes(environment)
     },
     EmberENV: {
       _JQUERY_INTEGRATION: false,
       FEATURES: {
         // Here you can enable experimental features on an ember canary build
         // e.g. 'with-controller': true
-        'ember-module-unification': true,
+        "ember-module-unification": true,
         EMBER_MODULE_UNIFICATION: true
       },
       EXTEND_PROTOTYPES: {
@@ -45,9 +47,9 @@ export default function(environment) {
     }
   };
 
-  ENV.APP.API_HOST = 'http://localhost:3000';
+  ENV.APP.API_HOST = "http://localhost:3000";
 
-  if (environment === 'development') {
+  if (environment === "development") {
     // ENV.APP.LOG_RESOLVER = true;
     // ENV.APP.LOG_ACTIVE_GENERATION = true;
     // ENV.APP.LOG_TRANSITIONS = true;
@@ -55,18 +57,17 @@ export default function(environment) {
     // ENV.APP.LOG_VIEW_LOOKUPS = true;
   }
 
-  if (environment === 'test') {
+  if (environment === "test") {
     // keep test console output quieter
     ENV.APP.LOG_ACTIVE_GENERATION = false;
     ENV.APP.LOG_VIEW_LOOKUPS = false;
 
     ENV.APP.autoboot = false;
-    ENV.APP.rootElement = '#ember-testing';
+    ENV.APP.rootElement = "#ember-testing";
   }
 
-  if (environment === 'production') {
-
+  if (environment === "production") {
   }
 
   return ENV;
-};
+}

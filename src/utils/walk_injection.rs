@@ -53,8 +53,6 @@ pub fn lookup_for_extensions_with_predicate<F>(hashmap: HashMap<String, String>,
 
 #[cfg(test)]
 mod tests {
-    use std::io;
-    use std::fs;
     use super::*;
     use super::super::super::injections::documentation;
 

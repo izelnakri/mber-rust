@@ -18,3 +18,4 @@ fm = c.cm.new_source_file(FileName::Anon || FileName::Real(options.filename.clon
 
 self.c.process_js_file(self.fm.clone(), self.options.clone())
 
+securesvr reg/log/log/deploy [sss]

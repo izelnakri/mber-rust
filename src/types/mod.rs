@@ -22,7 +22,7 @@ pub struct Config {
 impl Config {
     pub fn build<'a>(env: Value, index_html_injections: HashMap<String, String>, build_cache: BuildCache) -> Config {
         Config {
-            application_name: String::from(env["modulePrefix"].as_str().unwrap()),
+            application_name: String::from(env["modulePrefix"].as_str().unwrap_or("frontend")),
             build_cache: Box::new(build_cache),
             cli_arguments: Box::new(CLIArguments::parse()),
             env: env,
