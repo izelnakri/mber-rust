@@ -8,6 +8,7 @@ use yansi::Paint;
 pub mod application;
 pub mod console;
 pub mod file;
+pub mod html_file;
 pub mod recursive_file_lookup;
 pub mod say;
 pub mod walk_injection;

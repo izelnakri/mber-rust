@@ -262,7 +262,6 @@ mod tests {
         return finalize_test(current_directory);
     }
 
-
     #[test]
     fn build_appends_memserver_path_only_on_memserver_mode() -> Result<(), Box<dyn Error>> {
         let (current_directory, example_asset_map, _) = setup_test()?;
@@ -341,4 +340,3 @@ mod tests {
         return finalize_test(current_directory);
     }
 }
-

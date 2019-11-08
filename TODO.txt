@@ -11,6 +11,7 @@ ember-cli-qunit addon not there anymore on scripts/build-test-support.js
 - Check swc and ratel transpilers
 - write all babel addons
 - compiles hbs templates
+- add spinners and progress bars
 
 swc Compiler high-level API is private inside node-swc/native
 

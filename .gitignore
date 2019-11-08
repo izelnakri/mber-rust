@@ -4,6 +4,7 @@ node_modules
 ember-app-boilerplate/node_modules
 ember-app-boilerplate/package-lock.json
 ember-app-boilerplate/tmp
+ember-app-boilerplate/dist
 **/*.rs.bk
 src/injections/*
 !src/injections/mod.rs
