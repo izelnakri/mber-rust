@@ -1,7 +1,8 @@
 use std::time::Instant;
-use std::path::PathBuf;
+// use std::path::PathBuf;
 // use std::str::FromStr;
 use std::fs;
+use std::collections::HashMap;
 use yansi::Paint;
 use std::error::Error;
 use super::super::utils::{console, html_file};
@@ -11,17 +12,17 @@ use super::super::types::Config;
 // asset_map{ file_name: file_content }, hashed_file_names{file_name: hashed_file_name} (comes
 // later after needed assets defined), then changes original html to hashed references and write
 // hash filenames to the dist folder(this allows uniq file caching for clients)
-pub fn build(config: Config) -> Result<(Vec<String>, Vec<HashMap<String, String>), Box<dyn Error>> {
+pub fn build(config: Config) -> Result<(String, Vec<HashMap<String, String>>), Box<dyn Error>> {
     console::log(format!("{} {}...", Paint::yellow("BUNDLING:"), config.application_name));
 
     let bundle_start = Instant::now();
     let project_root = &config.project_root.display();
-    let output_directory = format!("{}/dist", &project_root).as_str();
+    let output_directory = format!("{}/dist", &project_root);
     let should_build_tests = (config.env["environment"].to_string() != "production") &&
         config.cli_arguments.testing;
     let should_build_documentation = config.env["documentation"]["enabled"].as_bool().unwrap_or(false);
 
-    reset_output_folder(&output_directory)?;
+    reset_output_folder(&output_directory.as_str())?;
 
     // NOTE: simplify below in functions
     // TODO: also do the transpileIndexHTML one more time?
@@ -91,14 +92,14 @@ pub fn build(config: Config) -> Result<(Vec<String>, Vec<HashMap<String, String>
     // );
 
     // return Ok((message, output_metadata));
-    let hashmap: HashMap<String, String> = HashMap::new();
-    hashmap.insert("a", "b");
+    let mut hashmap: HashMap<String, String> = HashMap::new();
+    hashmap.insert(String::from("a"), String::from("b"));
 
-    return Ok(("", vec![hashmap]);
+    return Ok((String::from(""), vec![hashmap]));
 }
 
-fn reset_output_folder(folder_path: &str) -> Result<(PathBuf, Value, Value), Box<dyn Error>> {
+fn reset_output_folder(folder_path: &str) -> Result<(), Box<dyn Error>> {
     fs::remove_dir_all(&folder_path)?;
 
-    return fs::create_dir_all(format!("{}/assets", folder_path).as_str()); // NOTE: very important breaks other tests otherwise
+    return Ok(fs::create_dir_all(format!("{}/assets", folder_path).as_str())?); // NOTE: very important breaks other tests otherwise
 }
