@@ -5,14 +5,15 @@ use std::fs;
 use std::collections::HashMap;
 use yansi::Paint;
 use std::error::Error;
+use super::index_html;
+use select::document::Document;
 use super::super::utils::{console, html_file};
 use super::super::types::Config;
 
-// TODO: moved internal_html_asset lookup and path locality check to a util module
 // asset_map{ file_name: file_content }, hashed_file_names{file_name: hashed_file_name} (comes
 // later after needed assets defined), then changes original html to hashed references and write
 // hash filenames to the dist folder(this allows uniq file caching for clients)
-pub fn build(config: Config) -> Result<(String, Vec<HashMap<String, String>>), Box<dyn Error>> {
+pub fn build(config: &Config) -> Result<(String, Vec<HashMap<String, String>>), Box<dyn Error>> {
     console::log(format!("{} {}...", Paint::yellow("BUNDLING:"), config.application_name));
 
     let bundle_start = Instant::now();

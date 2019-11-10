@@ -89,7 +89,7 @@ fn build_hashmap_from_file_directory_with_filter<F>(directory_string: &str, filt
     let mut file_system_map: RefCell<HashMap<String, KeyValue>> = RefCell::new(HashMap::new());
 
     for entry in walker {
-        let entry = entry.unwrap();
+        let entry = entry.expect("ENTRY NOT FOUND");
 
         match entry.file_type().is_dir() {
             true => check_and_set_directory_map_to_map(&mut file_system_map, entry.path().display()),
@@ -126,14 +126,15 @@ fn get_from_directory_map_from_map<'a>(
     directory_index: usize,
 ) -> &'a mut HashMap<String, KeyValue> {
     let directory_list: Vec<&str> = directories_list.clone().collect::<Vec<_>>(); // NOTE: this is correct but optimize it!
-    let target_directory_list = directory_list.get(0..directory_index).unwrap();
+    let target_directory_list = directory_list.get(0..directory_index).expect("TARGET_DIRECTORY_LIST CANNOT BE SLICED");
 
     return target_directory_list.iter().enumerate().fold(
         hashmap,
         |acc: &mut HashMap<String, KeyValue>,
          (_index, directory_name)|
          -> &mut HashMap<String, KeyValue> {
-            match acc.get_mut(*directory_name).unwrap() {
+            println!("{}", directory_name);
+            match acc.get_mut(*directory_name).expect("CANNOT FIND THE DIRECTORY ON REFCELL HASHMAP") {
                 KeyValue::RefCell(something) => something,
                 _ => panic!(
                     "{} must exist in the fs directory mapping in memory!",
@@ -149,7 +150,7 @@ fn find_directory_map_and_insert_file(
     path: Display,
 ) {
     let path_string = path.to_string();
-    let file_name = &path_string.split("/").last().unwrap();
+    let file_name = &path_string.split("/").last().expect("SPLIT / DIDNT work on path_string");
     let path_list = &path_string.split("/");
     let directory_path_index = &path_list.clone().count().wrapping_sub(1);
     let contents = fs::read(&path_string).expect(format!("couldnt read {}", path_string).as_str());

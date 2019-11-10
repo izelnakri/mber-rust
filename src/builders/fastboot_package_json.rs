@@ -4,18 +4,20 @@ use std::fs;
 use std::result::Result;
 use std::error::Error;
 use serde_json;
-use serde_json::{json, Value};
+use serde_json::{json, Value, Map};
 use super::super::types::Config;
 
-pub fn build(asset_map: Value, config: Config, dist_folder: Option<&str>) -> Result<(String), Box<dyn Error>> {
+pub fn build(asset_map: Value, config: &Config, dist_folder: Option<&str>) -> Result<(String), Box<dyn Error>> {
     let target_dist_folder = dist_folder.unwrap_or("dist");
     let target_dist_path = PathBuf::from_str(format!("{}/{}/package.json", &config.project_root.display(), target_dist_folder).as_str())?;
+    println!("target_dist_path is {}", &target_dist_path.display());
     let application_path = &asset_map["assets/application.js"];
-    let application_name = config.application_name;
+    let application_name = &config.application_name;
 
     let mut original_env = config.env.clone();
     let env = original_env.as_object_mut().unwrap();
-    let target_app = env.get_mut("APP").unwrap().as_object_mut().unwrap();
+    let (mut default_app_value, mut default_fastboot_whitelist) = (Value::Object(Map::new()), Vec::new());
+    let target_app = env.get_mut("APP").unwrap_or(&mut default_app_value).as_object_mut().unwrap();
 
     target_app.insert(String::from_str("autoboot")?, Value::Bool(false));
     target_app.insert(String::from_str("name")?, Value::String(config.env["modulePrefix"].as_str().unwrap().to_string()));
@@ -27,7 +29,7 @@ pub fn build(asset_map: Value, config: Config, dist_folder: Option<&str>) -> Res
     env.insert(String::from_str("exportApplicationGlobal")?, Value::Bool(true));
     env.insert(String::from_str("isModuleUnification")?, Value::Bool(true));
 
-    let host_whitelist = config.env["fastboot"]["hostWhitelist"].as_array().unwrap();
+    let host_whitelist = config.env["fastboot"]["hostWhitelist"].as_array().unwrap_or(&default_fastboot_whitelist);
     let json = json!({
         "dependencies": {},
         "fastboot": {
@@ -150,8 +152,8 @@ mod tests {
         let project_directory = format!("{}/ember-app-boilerplate", current_directory.to_string_lossy());
 
         env::set_current_dir(&project_directory)?;
-        fs::remove_dir_all("tmp")?;
-        fs::remove_dir_all("dist")?;
+        fs::remove_dir_all("tmp").unwrap_or_else(|_| {});
+        fs::remove_dir_all("dist").unwrap_or_else(|_| {});
         fs::create_dir_all("tmp/assets")?; // NOTE: very important breaks other tests otherwise
         fs::create_dir_all("dist")?;
 
@@ -169,6 +171,8 @@ mod tests {
     }
 
     fn finalize_test(actual_current_directory: PathBuf) -> Result<(), Box<dyn Error>> {
+        fs::remove_dir_all("tmp")?;
+        fs::remove_dir_all("dist")?;
         env::set_current_dir(&actual_current_directory)?;
 
         return Ok(());
@@ -190,7 +194,7 @@ mod tests {
             BuildCache::new()
         );
 
-        build(example_asset_map, config, Some("tmp"))?;
+        build(example_asset_map, &config, Some("tmp"))?;
 
         let package_json: Value =
             serde_json::from_str(fs::read_to_string("tmp/package.json")?.as_str())?;
@@ -235,7 +239,7 @@ mod tests {
             BuildCache::new()
         );
 
-        build(second_example_asset_map, config, Some("dist"))?;
+        build(second_example_asset_map, &config, Some("dist"))?;
 
         let package_json: Value =
             serde_json::from_str(fs::read_to_string("dist/package.json")?.as_str())?;
@@ -313,7 +317,7 @@ mod tests {
             BuildCache::new()
         );
 
-        build(example_asset_map, config, Some("tmp"))?;
+        build(example_asset_map, &config, Some("tmp"))?;
 
         let package_json: Value =
             serde_json::from_str(fs::read_to_string("tmp/package.json")?.as_str())?;

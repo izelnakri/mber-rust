@@ -9,7 +9,7 @@ use sass_rs;
 use super::super::utils::{console, recursive_file_lookup, file};
 use super::super::types::Config;
 
-pub fn build(config: Config) -> Result<(String, fs::Metadata), Box<dyn Error>> {
+pub fn build(config: &Config) -> Result<(String, fs::Metadata), Box<dyn Error>> {
     console::log(format!("{} documentation.css...", Paint::yellow("BUILDING:")));
 
     let build_start = Instant::now();
@@ -74,14 +74,16 @@ mod tests {
         let documentation_css_output_path = format!("{}/tmp/assets/documentation.css", &project_directory);
 
         Paint::disable();
-        fs::remove_file(&documentation_css_output_path).unwrap_or_else(|_| {});
         env::set_current_dir(&project_directory)?;
+        fs::remove_file(&documentation_css_output_path).unwrap_or_else(|_| {});
+        fs::create_dir_all("tmp/assets").unwrap_or_else(|_| {});
 
         return Ok((current_directory, documentation_css_output_path, project_directory));
     }
 
     fn finalize_test(actual_current_directory: PathBuf) -> Result<(), Box<dyn Error>> {
         Paint::enable();
+        fs::remove_dir_all("tmp").unwrap_or_else(|_| {});
         env::set_current_dir(&actual_current_directory)?;
 
         return Ok(());
@@ -98,7 +100,7 @@ mod tests {
             HashMap::new(),
             BuildCache::new()
         );
-        let (message, _stats) = build(config)?;
+        let (message, _stats) = build(&config)?;
         let build_time_in_ms = Regex::new(r"documentation\.css in \d+ms")?
             .find(message.as_str()).unwrap().as_str()
             .replace("documentation.css in ", "")
@@ -123,7 +125,7 @@ mod tests {
             HashMap::new(),
             BuildCache::new()
         );
-        let (message, _stats) = build(config)?;
+        let (message, _stats) = build(&config)?;
         let build_time_in_ms = Regex::new(r"documentation\.css in \d+ms")?
             .find(message.as_str()).unwrap().as_str()
             .replace("documentation.css in ", "")
@@ -148,7 +150,7 @@ mod tests {
             HashMap::new(),
             BuildCache::new()
         );
-        let (message, _stats) = build(config)?;
+        let (message, _stats) = build(&config)?;
         let build_time_in_ms = Regex::new(r"documentation\.css in \d+ms")?
             .find(message.as_str()).unwrap().as_str()
             .replace("documentation.css in ", "")

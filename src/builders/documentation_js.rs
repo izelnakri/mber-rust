@@ -10,7 +10,7 @@ use super::super::injections::documentation;
 use super::super::types::Config;
 
 // NOTE: eslint in rust(This one is challenging)
-pub fn build(config: Config, _lint: bool) -> Result<(String, fs::Metadata), Box<dyn Error>> {
+pub fn build(config: &Config, _lint: bool) -> Result<(String, fs::Metadata), Box<dyn Error>> {
     console::log(format!("{} documentation.js...", Paint::yellow("BUILDING:")));
 
     let build_start = Instant::now();
@@ -90,12 +90,14 @@ mod tests {
         Paint::disable();
         fs::remove_file(&documentation_js_output_path).unwrap_or_else(|_| {});
         env::set_current_dir(&project_directory)?;
+        fs::create_dir_all("tmp/assets").unwrap_or_else(|_| {});
 
         return Ok((current_directory, documentation_js_output_path, project_directory));
     }
 
     fn finalize_test(actual_current_directory: PathBuf) -> Result<(), Box<dyn Error>> {
         Paint::enable();
+        fs::remove_dir_all("tmp").unwrap_or_else(|_| {});
         env::set_current_dir(&actual_current_directory)?;
 
         return Ok(());
@@ -112,7 +114,7 @@ mod tests {
             HashMap::new(),
             BuildCache::new()
         );
-        let (development_build_message, _stats) = build(config, false)?;
+        let (development_build_message, _stats) = build(&config, false)?;
         let development_build_time_in_ms = Regex::new(r"documentation\.js in \d+ms")?
             .find(development_build_message.as_str()).unwrap().as_str()
             .replace("documentation.js in ", "")
@@ -135,7 +137,7 @@ mod tests {
             HashMap::new(),
             BuildCache::new()
         );
-        let (production_build_message, _stats) = build(production_config, false)?;
+        let (production_build_message, _stats) = build(&production_config, false)?;
         let production_build_time_in_ms = Regex::new(r"documentation\.js in \d+ms")?
             .find(production_build_message.as_str()).unwrap().as_str()
             .replace("documentation.js in ", "")

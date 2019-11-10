@@ -2,12 +2,12 @@ use select::document::Document;
 use select::predicate::{Name};
 use regex::Regex;
 
-pub fn find_internal_assets_from_html(document: &Document) -> (Vec<&str>, Vec<&str>) {
+pub fn find_internal_assets_from_html(document: &Document) -> (Vec<String>, Vec<String>) {
     let script_tags = document.find(Name("script")).fold(Vec::new(), |mut result, node| {
         let src = node.attr("src").unwrap_or("");
 
         if src != "" && !uri_is_external(src) {
-            result.push(src);
+            result.push(src.to_string());
         }
 
         return result;
@@ -16,7 +16,7 @@ pub fn find_internal_assets_from_html(document: &Document) -> (Vec<&str>, Vec<&s
         let href = node.attr("href").unwrap_or("");
 
         if href != "" && !uri_is_external(href) {
-            result.push(href);
+            result.push(href.to_string());
         }
 
         return result;

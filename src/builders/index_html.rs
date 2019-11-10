@@ -7,7 +7,7 @@ use mustache::MapBuilder;
 use yansi::Paint;
 use super::super::types::Config;
 
-pub fn build(html_path: &str, config: Config) -> Result<String, Box<dyn Error>> {
+pub fn build(html_path: &str, config: &Config) -> Result<String, Box<dyn Error>> {
     let output_path = match html_path.ends_with("tests/index.html") {
         true => format!("{}/tmp/tests.html", &config.project_root.display()),
         false => format!("{}/tmp/index.html", &config.project_root.display())
@@ -27,7 +27,7 @@ pub fn build(html_path: &str, config: Config) -> Result<String, Box<dyn Error>> 
     return Ok(content);
 }
 
-pub fn build_documentation_html(html_path: &str, config: Config) -> Result<String, Box<dyn Error>> {
+pub fn build_documentation_html(html_path: &str, config: &Config) -> Result<String, Box<dyn Error>> {
     let documentation_path_in_config = &config.env["documentation"]["path"].as_str().unwrap_or_else(|| {
         return "No documentation html built since no no ENV.documentation.path defined";
     });
@@ -80,12 +80,14 @@ mod tests {
 
         Paint::disable();
         env::set_current_dir(&project_directory)?;
+        fs::create_dir_all("tmp").unwrap_or_else(|_| {});
 
         return Ok((current_directory, project_directory));
     }
 
     fn finalize_test(actual_current_directory: PathBuf) -> Result<(), Box<dyn Error>> {
         Paint::enable();
+        fs::remove_dir_all("tmp")?;
         env::set_current_dir(&actual_current_directory)?;
 
         return Ok(());
@@ -106,7 +108,7 @@ mod tests {
             HashMap::new(),
             BuildCache::new()
         );
-        let output_html = build(&html_input_path.as_str(), config)?;
+        let output_html = build(&html_input_path.as_str(), &config)?;
         let content = fs::read_to_string(html_output_path)?;
 
         assert_eq!(output_html, content);
@@ -139,7 +141,7 @@ mod tests {
             HashMap::new(),
             BuildCache::new()
         );
-        let output_html = build(&html_input_path.as_str(), config)?;
+        let output_html = build(&html_input_path.as_str(), &config)?;
         let content = fs::read_to_string(html_output_path)?;
 
         assert_eq!(output_html, content);
@@ -179,7 +181,7 @@ mod tests {
             index_html_injections,
             BuildCache::new()
         );
-        let output_html = build(&html_input_path.as_str(), config)?;
+        let output_html = build(&html_input_path.as_str(), &config)?;
         let content = fs::read_to_string(html_output_path)?;
 
         assert_eq!(output_html, content);
@@ -219,7 +221,7 @@ mod tests {
             "environment": "development", "modulePrefix": "frontend",
             "documentation": { "path": documentation_path }
         }), index_html_injections, BuildCache::new());
-        let output_html = build_documentation_html(&html_input_path.as_str(), config)?;
+        let output_html = build_documentation_html(&html_input_path.as_str(), &config)?;
         let content = fs::read_to_string(html_output_path)?;
 
         assert_eq!(output_html, content);
@@ -259,7 +261,7 @@ mod tests {
             "environment": "memserver", "modulePrefix": "custom-app",
             "memserver": { "enabled": true }, "documentation": { "path": documentation_path }
         }), index_html_injections, BuildCache::new());
-        let output_html = build_documentation_html(&html_input_path.as_str(), config)?;
+        let output_html = build_documentation_html(&html_input_path.as_str(), &config)?;
         let content = fs::read_to_string(html_output_path)?;
 
         assert_eq!(output_html, content);

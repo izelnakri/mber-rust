@@ -10,7 +10,7 @@ use super::super::transpilers;
 use super::super::types::Config;
 
 // NOTE: eslint in rust(This one is challenging)
-pub fn build(config: Config, _lint: bool) -> Result<(String, fs::Metadata), Box<dyn Error>> {
+pub fn build(config: &Config, _lint: bool) -> Result<(String, fs::Metadata), Box<dyn Error>> {
     console::log(format!("{} memserver.js...", Paint::yellow("BUILDING:")));
 
     let build_start = Instant::now();
@@ -78,12 +78,14 @@ mod tests {
         Paint::disable();
         fs::remove_file(&memserver_js_output_path).unwrap_or_else(|_| {});
         env::set_current_dir(&project_directory)?;
+        fs::create_dir_all("tmp/assets").unwrap_or_else(|_| {});
 
         return Ok((current_directory, memserver_js_output_path, project_directory));
     }
 
     fn finalize_test(actual_current_directory: PathBuf) -> Result<(), Box<dyn Error>> {
         Paint::enable();
+        fs::remove_dir_all("tmp").unwrap_or_else(|_| {});
         env::set_current_dir(&actual_current_directory)?;
 
         return Ok(());
@@ -100,7 +102,7 @@ mod tests {
             HashMap::new(),
             BuildCache::new()
         );
-        let (message, _stats) = build(config, false)?; // NOTE: config and lint
+        let (message, _stats) = build(&config, false)?; // NOTE: config and lint
         let build_time_in_ms = Regex::new(r"memserver\.js in \d+ms")?
             .find(message.as_str()).unwrap().as_str()
             .replace("memserver.js in ", "")
@@ -129,7 +131,7 @@ mod tests {
             HashMap::new(),
             BuildCache::new()
         );
-        let (message, _stats) = build(config, false)?; // NOTE: config and lint
+        let (message, _stats) = build(&config, false)?; // NOTE: config and lint
         let build_time_in_ms = Regex::new(r"memserver\.js in \d+ms")?
             .find(message.as_str()).unwrap().as_str()
             .replace("memserver.js in ", "")
@@ -158,7 +160,7 @@ mod tests {
             HashMap::new(),
             BuildCache::new()
         );
-        let (message, _stats) = build(config, false)?; // NOTE: config and lint
+        let (message, _stats) = build(&config, false)?; // NOTE: config and lint
         let build_time_in_ms = Regex::new(r"memserver\.js in \d+ms")?
             .find(message.as_str()).unwrap().as_str()
             .replace("memserver.js in ", "")
