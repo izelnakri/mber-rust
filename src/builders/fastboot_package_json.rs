@@ -10,17 +10,16 @@ use super::super::types::Config;
 pub fn build(asset_map: Value, config: &Config, dist_folder: Option<&str>) -> Result<(String), Box<dyn Error>> {
     let target_dist_folder = dist_folder.unwrap_or("dist");
     let target_dist_path = PathBuf::from_str(format!("{}/{}/package.json", &config.project_root.display(), target_dist_folder).as_str())?;
-    println!("target_dist_path is {}", &target_dist_path.display());
     let application_path = &asset_map["assets/application.js"];
     let application_name = &config.application_name;
 
     let mut original_env = config.env.clone();
     let env = original_env.as_object_mut().unwrap();
-    let (mut default_app_value, mut default_fastboot_whitelist) = (Value::Object(Map::new()), Vec::new());
+    let (mut default_app_value, default_fastboot_whitelist) = (Value::Object(Map::new()), Vec::new());
     let target_app = env.get_mut("APP").unwrap_or(&mut default_app_value).as_object_mut().unwrap();
 
     target_app.insert(String::from_str("autoboot")?, Value::Bool(false));
-    target_app.insert(String::from_str("name")?, Value::String(config.env["modulePrefix"].as_str().unwrap().to_string()));
+    target_app.insert(String::from_str("name")?, Value::String(config.env["modulePrefix"].as_str().unwrap_or("frontend").to_string()));
     target_app.insert(String::from_str("version")?, Value::String("0.0.0+b5f80b0d".to_string()));
 
     let final_app = serde_json::to_value(target_app)?;

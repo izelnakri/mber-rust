@@ -14,9 +14,10 @@ pub fn build(config: &Config, _lint: bool) -> Result<(String, fs::Metadata), Box
     console::log(format!("{} tests.js...", Paint::yellow("BUILDING:")));
 
     let build_start = Instant::now();
+    let environment = config.env["environment"].as_str().unwrap_or("development");
     let project_root = &config.project_root.display();
     let output_path = PathBuf::from_str(format!("{}/tmp/assets/tests.js", &project_root).as_str())?;
-    let should_minify = vec!["production", "demo"].contains(&config.env["environment"].as_str().unwrap());
+    let should_minify = vec!["production", "demo"].contains(&environment);
     let tests_folder_code = recursive_file_lookup::lookup_for_extensions(
         &PathBuf::from_str(format!("{}/tests", &project_root).as_str())?,
         vec![".js", ".ts"]
@@ -55,7 +56,7 @@ pub fn build(config: &Config, _lint: bool) -> Result<(String, fs::Metadata), Box
         Paint::green("BUILT:"),
         Paint::yellow(file::format_time_passed(build_start.elapsed().as_millis())),
         file::format_size(output_metadata.len()),
-        &config.env["environment"].as_str().unwrap()
+        environment
     );
 
     console::log(&message);

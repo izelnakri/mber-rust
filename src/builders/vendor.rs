@@ -16,9 +16,10 @@ pub fn build(config: &Config) -> Result<(String, fs::Metadata), Box<dyn Error>> 
     console::log(format!("{} vendor.js...", Paint::yellow("BUILDING:")));
 
     let build_start = Instant::now();
+    let environment = config.env["environment"].as_str().unwrap_or("development");
     let project_root = &config.project_root.display();
     let output_path = PathBuf::from_str(format!("{}/tmp/assets/vendor.js", &project_root).as_str())?;
-    let _should_minify = vec!["production", "demo"].contains(&config.env["environment"].as_str().unwrap());
+    let _should_minify = vec!["production", "demo"].contains(&environment);
     let should_exclude_ember_data = &config.env["excludeEmberData"].as_bool().unwrap_or(false);
 
     let mut content = vec![
@@ -61,7 +62,7 @@ pub fn build(config: &Config) -> Result<(String, fs::Metadata), Box<dyn Error>> 
         Paint::green("BUILT:"),
         Paint::yellow(file::format_time_passed(build_start.elapsed().as_millis())),
         file::format_size(output_metadata.len()),
-        &config.env["environment"].as_str().unwrap()
+        environment
     );
 
     console::log(&message);

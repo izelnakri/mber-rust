@@ -28,10 +28,8 @@ pub fn build(html_path: &str, config: &Config) -> Result<String, Box<dyn Error>>
 }
 
 pub fn build_documentation_html(html_path: &str, config: &Config) -> Result<String, Box<dyn Error>> {
-    let documentation_path_in_config = &config.env["documentation"]["path"].as_str().unwrap_or_else(|| {
-        return "No documentation html built since no no ENV.documentation.path defined";
-    });
-    let output_path = format!("{}/tmp/{}.html", &config.project_root.display(), documentation_path_in_config);
+    let documentation_path_in_config = &config.env["documentation"]["path"].as_str().unwrap_or("styleguide");
+    let output_path = format!("{}/tmp{}.html", &config.project_root.display(), documentation_path_in_config);
     let mut content = transpile_mustache_template(html_path, &config.index_html_injections)?;
 
     content = content.replace(

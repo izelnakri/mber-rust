@@ -13,6 +13,7 @@ pub fn build(config: &Config) -> Result<(String, fs::Metadata), Box<dyn Error>> 
     console::log(format!("{} application.css...", Paint::yellow("BUILDING:")));
 
     let build_start = Instant::now();
+    let environment = config.env["environment"].as_str().unwrap_or("development");
     let project_root = &config.project_root.display();
     let output_path = PathBuf::from_str(format!("{}/tmp/assets/application.css", &project_root).as_str())?;
     let application_path = PathBuf::from_str(format!("{}/src", &project_root).as_str())?;
@@ -24,7 +25,7 @@ pub fn build(config: &Config) -> Result<(String, fs::Metadata), Box<dyn Error>> 
     ).into_iter()
     .map(|file_name| fs::read_to_string(file_name).unwrap())
     .collect::<Vec<String>>();
-    let output_style = match vec!["production", "demo"].contains(&config.env["environment"].as_str().unwrap()) {
+    let output_style = match vec!["production", "demo"].contains(&environment) {
         true => sass_rs::OutputStyle::Compressed,
         false => sass_rs::OutputStyle::Expanded
     };
@@ -44,7 +45,7 @@ pub fn build(config: &Config) -> Result<(String, fs::Metadata), Box<dyn Error>> 
         Paint::green("BUILT:"),
         Paint::yellow(file::format_time_passed(build_start.elapsed().as_millis())),
         file::format_size(output_metadata.len()),
-        &config.env["environment"].as_str().unwrap()
+        environment
     );
 
     console::log(&message);

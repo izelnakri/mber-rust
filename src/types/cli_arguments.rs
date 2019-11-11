@@ -29,7 +29,7 @@ impl CLIArguments {
             watch: true,
             debug: false,
             talk: true,
-            testing: false
+            testing: true
         }
     }
 }

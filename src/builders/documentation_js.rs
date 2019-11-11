@@ -14,11 +14,11 @@ pub fn build(config: &Config, _lint: bool) -> Result<(String, fs::Metadata), Box
     console::log(format!("{} documentation.js...", Paint::yellow("BUILDING:")));
 
     let build_start = Instant::now();
+    let environment = config.env["environment"].as_str().unwrap_or("development");
     let project_root = &config.project_root.display();
     let output_path = PathBuf::from_str(format!("{}/tmp/assets/documentation.js", &project_root).as_str())?;
     let documentation_path = PathBuf::from_str(format!("{}/documentation", &project_root).as_str())?;
-    let should_minify = vec!["production", "demo"]
-        .contains(&config.env["environment"].as_str().expect("ENV.environment not found on config/environment.js"));
+    let should_minify = vec!["production", "demo"].contains(&environment);
     let documentation_addon_code = import_documentation_code(&config.project_root, &config.application_name, should_minify);
     let contents = recursive_file_lookup::lookup_for_extensions(
         &documentation_path,
@@ -41,7 +41,7 @@ pub fn build(config: &Config, _lint: bool) -> Result<(String, fs::Metadata), Box
         Paint::green("BUILT:"),
         Paint::yellow(file::format_time_passed(build_start.elapsed().as_millis())),
         file::format_size(output_metadata.len()),
-        &config.env["environment"].as_str().unwrap()
+        environment
     );
 
     console::log(&message);

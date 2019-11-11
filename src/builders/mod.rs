@@ -28,8 +28,8 @@ pub fn build_all_assets(config: &Config) -> Result<(), Box<dyn Error>> {
       "assets/vendor.js": "assets/vendor.js",
       "assets/application.js": "assets/application.js",
     });
-    let memserver_is_enabled = &config.env["memserver"]["enabled"].as_bool().unwrap_or(false);
-    let documentation_is_enabled = &config.env["documentation"]["enabled"].as_bool().unwrap_or(false);
+    let memserver_is_enabled = config.env["memserver"]["enabled"].as_bool().unwrap_or(false);
+    let documentation_is_enabled = config.env["documentation"]["enabled"].as_bool().unwrap_or(false);
     let index_html_path = format!("{}/index.html", &project_root);
 
     index_html::build(index_html_path.as_str(), &config)?;
@@ -37,7 +37,7 @@ pub fn build_all_assets(config: &Config) -> Result<(), Box<dyn Error>> {
     vendor::build(&config)?;
     application::build(&config, false)?; // NOTE: enable linting in future
 
-    if *memserver_is_enabled {
+    if memserver_is_enabled {
         memserver::build(&config, false)?; // NOTE: enable linting in future
         default_asset_map.as_object_mut().unwrap().insert(
             "assets/memserver.js".to_string(),
@@ -47,7 +47,7 @@ pub fn build_all_assets(config: &Config) -> Result<(), Box<dyn Error>> {
 
     fastboot_package_json::build(default_asset_map, &config, Some("tmp"))?;
 
-    if *documentation_is_enabled {
+    if documentation_is_enabled {
         documentation_js::build(&config, false)?; // NOTE: enable linting in future
         documentation_css::build(&config)?;
 
@@ -57,11 +57,11 @@ pub fn build_all_assets(config: &Config) -> Result<(), Box<dyn Error>> {
     }
 
     if config.cli_arguments.testing {
-        index_html::build(&index_html_path, &config);
+        index_html::build(&index_html_path, &config)?;
 
-        test_files::build(&config, false); // NOTE: enable linting in future
-        fs::write(format!("{}/tmp/assets/test-support.css", &project_root), include_str!("../../_vendor/test-support.css"));
-        fs::write(format!("{}/tmp/assets/test-support.js", &project_root), include_str!("../../_vendor/test-support.js"));
+        test_files::build(&config, false)?; // NOTE: enable linting in future
+        fs::write(format!("{}/tmp/assets/test-support.css", &project_root), include_str!("../../_vendor/test-support.css"))?;
+        fs::write(format!("{}/tmp/assets/test-support.js", &project_root), include_str!("../../_vendor/test-support.js"))?;
     }
 
     return Ok(());
@@ -117,10 +117,7 @@ mod tests {
             tests_support_js_path, tests_support_css_path, package_json_path
         ) = setup_test()?;
         let config = Config::build(
-            json!({
-                "environment": "production",
-                "modulePrefix": "frontend"
-            }),
+            json!({ "environment": "production", "modulePrefix": "frontend" }),
             HashMap::new(),
             BuildCache::new()
         );
@@ -140,9 +137,9 @@ mod tests {
         assert!(fs::metadata(application_css_output_path).is_ok());
         assert!(fs::metadata(index_html_output_path).is_ok());
         assert!(!fs::metadata(memserver_output_path).is_ok());
-        assert!(!fs::metadata(tests_output_path).is_ok());
-        assert!(!fs::metadata(tests_support_js_path).is_ok());
-        assert!(!fs::metadata(tests_support_css_path).is_ok());
+        assert!(fs::metadata(tests_output_path).is_ok());
+        assert!(fs::metadata(tests_support_js_path).is_ok());
+        assert!(fs::metadata(tests_support_css_path).is_ok());
         assert!(fs::metadata(package_json_path).is_ok());
 
         return finalize_test(current_directory);
@@ -187,9 +184,9 @@ mod tests {
         assert!(fs::metadata(application_css_output_path).is_ok());
         assert!(fs::metadata(index_html_output_path).is_ok());
         assert!(!fs::metadata(memserver_output_path).is_ok());
-        assert!(!fs::metadata(tests_output_path).is_ok());
-        assert!(!fs::metadata(tests_support_js_path).is_ok());
-        assert!(!fs::metadata(tests_support_css_path).is_ok());
+        assert!(fs::metadata(tests_output_path).is_ok());
+        assert!(fs::metadata(tests_support_js_path).is_ok());
+        assert!(fs::metadata(tests_support_css_path).is_ok());
         assert!(fs::metadata(package_json_path).is_ok());
 
         return finalize_test(current_directory);
@@ -239,9 +236,9 @@ mod tests {
         assert!(fs::metadata(application_css_output_path).is_ok());
         assert!(fs::metadata(index_html_output_path).is_ok());
         assert!(fs::metadata(memserver_output_path).is_ok());
-        assert!(!fs::metadata(tests_output_path).is_ok());
-        assert!(!fs::metadata(tests_support_js_path).is_ok());
-        assert!(!fs::metadata(tests_support_css_path).is_ok());
+        assert!(fs::metadata(tests_output_path).is_ok());
+        assert!(fs::metadata(tests_support_js_path).is_ok());
+        assert!(fs::metadata(tests_support_css_path).is_ok());
         assert!(fs::metadata(package_json_path).is_ok());
 
         return finalize_test(current_directory);
@@ -267,6 +264,9 @@ mod tests {
                     ]
                 },
                 "memserver": {
+                    "enabled": true
+                },
+                "documentation": {
                     "enabled": true
                 }
             }),
