@@ -1,10 +1,15 @@
 use std::time::Instant;
-// use std::path::PathBuf;
 // use std::str::FromStr;
 use std::fs;
 use std::collections::HashMap;
-use yansi::Paint;
 use std::error::Error;
+use std::path::PathBuf;
+use yansi::Paint;
+use md5;
+use fs_extra;
+use serde_json;
+use serde_json::json;
+use fs_extra::dir;
 use super::{index_html}; // fastboot_package_json
 use select::document::Document;
 use super::super::utils::{console, file, html_file};
@@ -26,61 +31,67 @@ pub fn build(config: &Config) -> Result<(String, Vec<HashMap<String, String>>), 
     reset_output_folder(&output_directory.as_str())?;
 
     let mut build_files: Vec<String> = Vec::new();
-    let index_html_path = format!("{}/index.html", &project_root);
+    let index_html_path_tuple = (format!("{}/index.html", &project_root), format!("{}/dist/index.html", &project_root));
 
-    build_files.extend(get_build_files_from_html(&index_html_path.as_str(), &config, false)?);
+    build_files.extend(get_build_files_from_html(&index_html_path_tuple.0.as_str(), &config, false)?);
 
-    let mut build_html_paths = vec![index_html_path];
+    let mut build_html_paths = vec![index_html_path_tuple];
 
     if should_build_tests {
-        let tests_html_path = format!("{}/tests/index.html", &project_root);
+        let tests_html_path_tuple = (
+            format!("{}/tests/index.html", &project_root), format!("{}/dist/tests.html", &project_root)
+        );
 
-        build_files.extend(get_build_files_from_html(&tests_html_path.as_str(), &config, false)?);
-        build_html_paths.push(tests_html_path);
+        build_files.extend(get_build_files_from_html(&tests_html_path_tuple.0.as_str(), &config, false)?);
+        build_html_paths.push(tests_html_path_tuple);
     }
 
     if should_build_documentation {
-        let documentation_html_path = format!("{}/index.html", &project_root);
+        let documentation_path_in_config = config.env["documentation"]["path"].as_str().unwrap_or("styleguide");
+        let documentation_html_path_tuple = (
+            format!("{}/tmp{}.html", &config.project_root.display(), documentation_path_in_config),
+            format!("{}/dist{}.html", &project_root, documentation_path_in_config)
+        );
 
-        build_files.extend(get_build_files_from_html(&documentation_html_path.as_str(), &config, true)?);
-        build_html_paths.push(documentation_html_path);
+        build_files.extend(get_build_files_from_html(&documentation_html_path_tuple.0.as_str(), &config, true)?);
+        build_html_paths.push(documentation_html_path_tuple);
     }
 
     build_files.sort();
     build_files.dedup();
 
     let target_asset_map = build_files.iter().fold(HashMap::new(), |mut result, file_name| {
-        // let smt = format!("{}/tmp{}", &project_root, &file_name);
-        // println!("{}", smt.as_str());
         let content = fs::read_to_string(format!("{}/tmp{}", &project_root, &file_name)).unwrap();
 
         result.insert(file_name, content);
 
         return result;
     });
-    println!("{:?}", build_files);
-    // println!("{:?}", target_asset_map);
+    let hashed_file_name_map = build_hashed_filename_map(&target_asset_map);
+    // println!("{:?}", build_files);
+    // println!("{:?}", target_asset_map.keys());
+    // println!("{:?}", hashed_file_name_map);
 
-    // let hashed_file_names = get_hashed_filename_map(&target_asset_map);
+    fs_extra::copy_items(&vec![format!("{}/public", &project_root)], output_directory, &dir::CopyOptions::new())?;
+    safe_write_html_and_assets(build_html_paths, &hashed_file_name_map)?;
+    // TODO: turn hashed_file_names to Json::Value
+    write_asset_map(&config.project_root, hashed_file_name_map)?;
 
-    // safe_write_html_and_assets(build_html_paths, target_asset_map, &hashed_file_names)?;
-    // write_asset_map(&project_root, hashed_file_names)?;
-    // copy_public_folder(&project_root)?;
-
-    // if config.cli_arguments.fastboot {
-    //     fastboot_package_json::build(hashed_file_names, config, Some("dist"))?;
-    // }
+    if config.cli_arguments.fastboot {
+        // TODO: convert hashed_file_names to Json::Value
+        // fastboot_package_json::build(hashed_file_name_map, config, Some("dist"))?;
+    }
 
     // TODO: in future create a thread global build error to say/stop tts on error
 
-    let message = format!(
+    let build_message = format!(
         "{} {} in {}",
         Paint::green("BUNDLED:"),
         &config.application_name,
         Paint::yellow(file::format_time_passed(bundle_start.elapsed().as_millis())),
     );
 
-    console::log(message);
+    console::log(&build_message);
     console::log(Paint::green("Built project successfully. Stored in \"./dist\":"));
 
     // let output_metadata = fs::read_dir(output_directory)?;
@@ -94,24 +105,28 @@ pub fn build(config: &Config) -> Result<(String, Vec<HashMap<String, String>>), 
     //   gzipSize: gzipBuffer.length
     // }
 
+    // println!(
+        // "{}{}{}",
+        // Paint::blue(format!(" - {}:", )),
+        // Paint::yellow(),
+        // Paint::green("[{} gzipped]")
+    // );
+    // println!(size_stats_message);
     // console.log(
     //   chalk.blue(` - ${fileObject.fileName}:`),
     //   chalk.yellow(formatSize(fileObject.size)),
     //   chalk.green(`[${formatSize(fileObject.gzipSize)} gzipped]`)
     // );
 
-    // return Ok((message, output_metadata));
-    let mut hashmap: HashMap<String, String> = HashMap::new();
-    hashmap.insert(String::from("a"), String::from("b"));
+    let hashed_distributed_assets: Vec<HashMap<String, String>> = vec![HashMap::new()]; // NOTE: change this
 
-    return Ok((String::from(""), vec![hashmap]));
+    return Ok((build_message, hashed_distributed_assets));
 }
 
 fn reset_output_folder(output_directory: &str) -> Result<(), Box<dyn Error>> {
     fs::remove_dir_all(output_directory).unwrap_or_else(|_| {});
-    // fs::create_dir_ahtml_pathll(format!("{}/assets", output_directory).as_str())?;
+    // fs::create_dir_all(format!("{}/assets", output_directory).as_str())?;
 
-    // return Ok(fs::crhtml_patheate_dir_all(format!("{}/dist/assets", folder_path).as_str())?); // NOTE: very important breaks other tests otherwise
     return Ok(fs::create_dir_all(format!("{}/assets", output_directory).as_str())?);
 }
 
@@ -122,27 +137,54 @@ fn get_build_files_from_html(html_path: &str, config: &Config, is_documentation:
         false => index_html::build(&html_path, &config)?
     };
     let html_document = Document::from(html.as_str());
-    let (mut html_js_files, mut html_css_files) = html_file::find_internal_assets_from_html(&html_document);
+    let (html_js_files, html_css_files) = html_file::find_internal_assets_from_html(&html_document);
 
     return Ok(html_js_files.into_iter().chain(html_css_files.into_iter()).collect());
 }
 
-fn get_hashed_filename_map(asset_map: &HashMap<String, String>) -> HashMap<String, String> {
-    return asset_map.clone();
+fn build_hashed_filename_map<'a>(asset_map: &'a HashMap<&String, String>) -> HashMap<&'a String, String> {
+    return asset_map.iter().fold(HashMap::new(), |mut result, (file_name, content)| {
+        let hash = format!("{:?}", md5::compute(content));
+        let file = PathBuf::from(file_name);
+        let file_reference = file.iter().fold(String::new(), |mut result, path_component| {
+            if path_component == file.file_name().unwrap() {
+                result.push_str(format!("/{}", file.file_stem().unwrap().to_str().unwrap()).as_str());
+            } else {
+                result.push_str(path_component.to_str().unwrap());
+            }
+
+            return result;
+        });
+
+        result.insert(file_name, format!("{}-{}.{}", file_reference, hash, file.extension().unwrap().to_str().unwrap()));
+
+        return result;
+    });
 }
 
 fn safe_write_html_and_assets(
-    build_html_paths: Vec<&str>, target_asset_map: HashMap<String, String>, hashed_file_names: &HashMap<String, String>
+    html_path_tuples: Vec<(String, String)>,
+    hashed_file_names: &HashMap<&String, String>,
 ) -> Result<(), Box<dyn Error>> {
+    html_path_tuples.iter().for_each(|(html_path, target_dist_html_path)| {
+        let html_content = fs::read_to_string(&html_path).unwrap();
+        let target_content = hashed_file_names.iter().fold(html_content, |result, (file_name, hashed_file_name)| {
+            return result.replace(file_name.as_str(), hashed_file_name.as_str());
+        });
+
+        fs::write(target_dist_html_path, target_content).unwrap();
+    });
+
     return Ok(());
 }
 
-fn write_asset_map(project_root: &str, hashed_file_names: HashMap<String, String>)
+fn write_asset_map(project_root: &PathBuf, hashed_file_names: HashMap<&String, String>)
     -> Result<(), Box<dyn Error>> {
-    return Ok(());
-}
+    fs::write(format!("{}/dist/assets/assetMap.json", project_root.display()), serde_json::to_string_pretty(&json!({
+        "assets": "", // TODO: Object.assign(hashedAssetMap, { 'assets/assetMap.json': 'assets/assetMap.json' }),
+        "prepend": ""
+    })).unwrap())?;
 
-fn copy_public_folder(project_root: &str) -> Result<(), Box<dyn Error>> {
     return Ok(());
 }
 
@@ -325,3 +367,18 @@ mod tests {
     // fn build_resets_dist() {
     // }
 }
+
+// fn copy_public_folder(project_root: &str) -> Result<(), Box<dyn Error>> {
+//     let walker = WalkDir::new(directory_string).into_iter().filter_entry(filter_function);
+
+//     for entry in walker {
+//         let entry = entry.expect("ENTRY NOT FOUND");
+
+//         match entry.file_type().is_dir() {
+//             true => check_and_set_directory_map_to_map(&mut file_system_map, entry.path().display()),
+//             false => find_directory_map_and_insert_file(&mut file_system_map, entry.path().display())
+//         }
+//     }
+
+//     return Ok(());
+// }
