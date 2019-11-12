@@ -14,9 +14,6 @@ use super::{index_html, fastboot_package_json};
 use super::super::utils::{console, file, html_file};
 use super::super::types::Config;
 
-// asset_map{ file_name: file_content }, hashed_file_names{file_name: hashed_file_name} (comes
-// later after needed assets defined), then changes original html to hashed references and write
-// hash filenames to the dist folder(this allows uniq file caching for clients)
 pub fn build(config: &Config) -> Result<(String, Vec<Value>), Box<dyn Error>> {
     console::log(format!("{} {}...", Paint::yellow("BUNDLING:"), config.application_name));
 
@@ -69,7 +66,7 @@ pub fn build(config: &Config) -> Result<(String, Vec<Value>), Box<dyn Error>> {
     let hashed_file_name_map = build_hashed_filename_map(&target_asset_map);
 
     fs_extra::copy_items(&vec![format!("{}/public", &project_root)], &output_directory, &dir::CopyOptions::new())?;
-    safe_write_html_and_assets(build_html_paths, &hashed_file_name_map)?;
+    safe_write_html_and_assets(&output_directory, build_html_paths, &hashed_file_name_map, &target_asset_map)?;
 
     let target_map_json = build_file_map_with_asset_map(hashed_file_name_map);
 
@@ -91,22 +88,25 @@ pub fn build(config: &Config) -> Result<(String, Vec<Value>), Box<dyn Error>> {
     console::log(&build_message);
     console::log(Paint::green("Built project successfully. Stored in \"./dist\":"));
 
-    let dir_output = fs::read_dir(output_directory)?;
-    let output_metadata = dir_output.fold(Vec::new(), |mut result, file_path| {
-        // let extension =
+    let dist_assets = fs::read_dir(format!("{}/assets", output_directory))?;
+    let output_metadata = dist_assets.fold(Vec::new(), |mut result, entry| {
+        let target_entry = entry.unwrap();
+        let file_name = String::from(target_entry.file_name().to_str().unwrap());
 
-        if true {
+        if file_name.ends_with(".js") || file_name.ends_with(".css") {
+            let file_size = target_entry.metadata().unwrap().len();
+            let gzip_size = file::gzip_metadata(&target_entry.path()).unwrap();
             let file_metadata = json!({
-                "file_name": "anan.js",
-                "size": 1000,
-                "gzip_size": 200
+                "file_name": file_name,
+                "size": file_size,
+                "gzip_size": gzip_size
             });
 
             println!(
                 "{} {} {}",
                 Paint::blue(format!(" - {}:", file_metadata["file_name"].as_str().unwrap())),
-                Paint::yellow(&file_metadata["size"]),
-                Paint::green(format!("[{} gzipped]", file_metadata["gzip_size"]))
+                Paint::yellow(file::format_size(file_size)),
+                Paint::green(format!("[{} gzipped]", file::format_size(gzip_size as u64)))
             );
 
             result.push(file_metadata);
@@ -157,8 +157,10 @@ fn build_hashed_filename_map<'a>(asset_map: &'a HashMap<&String, String>) -> Has
 }
 
 fn safe_write_html_and_assets(
+    output_directory: &String,
     html_path_tuples: Vec<(String, String)>,
     hashed_file_names: &HashMap<&String, String>,
+    target_asset_map: &HashMap<&String, String>
 ) -> Result<(), Box<dyn Error>> {
     html_path_tuples.iter().for_each(|(html_path, target_dist_html_path)| {
         let html_content = fs::read_to_string(&html_path).unwrap();
@@ -167,6 +169,11 @@ fn safe_write_html_and_assets(
         });
 
         fs::write(target_dist_html_path, target_content).unwrap();
+    });
+    target_asset_map.iter().for_each(|(file_name, content)| {
+        let hashed_file_name = hashed_file_names.get(file_name).unwrap();
+
+        fs::write(format!("{}/{}", &output_directory, hashed_file_name), content).unwrap();
     });
 
     return Ok(());

@@ -1,3 +1,9 @@
+use std::path::PathBuf;
+use std::io::Write;
+use std::fs;
+use std::error::Error;
+use libflate::gzip::{Encoder};
+
 pub fn format_time_passed(time_passed: u128) -> String {
     return time_passed.to_string().as_str().to_owned() + "ms";
 }
@@ -10,9 +16,16 @@ pub fn format_size<'a>(size_in_bytes: u64) -> String {
     return format!("{:.2} kB", (size_in_bytes as f64 / 1000.0));
 }
 
-// pub fn report_file(file_path) -> HashMap<String, String> {
+pub fn gzip_metadata(file_path: &PathBuf) -> Result<(usize), Box<dyn Error>> {
+    let file_content = fs::read(file_path)?;
+    let mut encoder = Encoder::new(Vec::new()).unwrap();
 
-// }
+    encoder.write_all(&file_content).unwrap();
+
+    let encoded_data = encoder.finish().into_result().unwrap();
+
+    return Ok(encoded_data.capacity());
+}
 
 
 #[cfg(test)]
