@@ -1,5 +1,4 @@
 use std::time::Instant;
-// use std::str::FromStr;
 use std::fs;
 use std::collections::HashMap;
 use std::error::Error;
@@ -7,18 +6,18 @@ use std::path::PathBuf;
 use yansi::Paint;
 use md5;
 use fs_extra;
-use serde_json;
-use serde_json::json;
 use fs_extra::dir;
-use super::{index_html}; // fastboot_package_json
+use serde_json;
+use serde_json::{Map, json, Value};
 use select::document::Document;
+use super::{index_html, fastboot_package_json};
 use super::super::utils::{console, file, html_file};
 use super::super::types::Config;
 
 // asset_map{ file_name: file_content }, hashed_file_names{file_name: hashed_file_name} (comes
 // later after needed assets defined), then changes original html to hashed references and write
 // hash filenames to the dist folder(this allows uniq file caching for clients)
-pub fn build(config: &Config) -> Result<(String, Vec<HashMap<String, String>>), Box<dyn Error>> {
+pub fn build(config: &Config) -> Result<(String, Vec<Value>), Box<dyn Error>> {
     console::log(format!("{} {}...", Paint::yellow("BUNDLING:"), config.application_name));
 
     let bundle_start = Instant::now();
@@ -68,18 +67,16 @@ pub fn build(config: &Config) -> Result<(String, Vec<HashMap<String, String>>), 
         return result;
     });
     let hashed_file_name_map = build_hashed_filename_map(&target_asset_map);
-    // println!("{:?}", build_files);
-    // println!("{:?}", target_asset_map.keys());
-    // println!("{:?}", hashed_file_name_map);
 
-    fs_extra::copy_items(&vec![format!("{}/public", &project_root)], output_directory, &dir::CopyOptions::new())?;
+    fs_extra::copy_items(&vec![format!("{}/public", &project_root)], &output_directory, &dir::CopyOptions::new())?;
     safe_write_html_and_assets(build_html_paths, &hashed_file_name_map)?;
-    // TODO: turn hashed_file_names to Json::Value
-    write_asset_map(&config.project_root, hashed_file_name_map)?;
+
+    let target_map_json = build_file_map_with_asset_map(hashed_file_name_map);
+
+    write_asset_map(&config.project_root, &target_map_json)?;
 
     if config.cli_arguments.fastboot {
-        // TODO: convert hashed_file_names to Json::Value
-        // fastboot_package_json::build(hashed_file_name_map, config, Some("dist"))?;
+        fastboot_package_json::build(target_map_json, config, Some("dist"))?;
     }
 
     // TODO: in future create a thread global build error to say/stop tts on error
@@ -94,38 +91,35 @@ pub fn build(config: &Config) -> Result<(String, Vec<HashMap<String, String>>), 
     console::log(&build_message);
     console::log(Paint::green("Built project successfully. Stored in \"./dist\":"));
 
-    // let output_metadata = fs::read_dir(output_directory)?;
+    let dir_output = fs::read_dir(output_directory)?;
+    let output_metadata = dir_output.fold(Vec::new(), |mut result, file_path| {
+        // let extension =
 
-    // output_metadata.iter_mut().filter().for_each(|file_path| {
-    // file::report_file(file_path);
-    // });
-    // const fileObject = {
-    //   fileName: stripProcessCWD(filePath),
-    //   size: fileBuffer.length,
-    //   gzipSize: gzipBuffer.length
-    // }
+        if true {
+            let file_metadata = json!({
+                "file_name": "anan.js",
+                "size": 1000,
+                "gzip_size": 200
+            });
 
-    // println!(
-        // "{}{}{}",
-        // Paint::blue(format!(" - {}:", )),
-        // Paint::yellow(),
-        // Paint::green("[{} gzipped]")
-    // );
-    // println!(size_stats_message);
-    // console.log(
-    //   chalk.blue(` - ${fileObject.fileName}:`),
-    //   chalk.yellow(formatSize(fileObject.size)),
-    //   chalk.green(`[${formatSize(fileObject.gzipSize)} gzipped]`)
-    // );
+            println!(
+                "{} {} {}",
+                Paint::blue(format!(" - {}:", file_metadata["file_name"].as_str().unwrap())),
+                Paint::yellow(&file_metadata["size"]),
+                Paint::green(format!("[{} gzipped]", file_metadata["gzip_size"]))
+            );
 
-    let hashed_distributed_assets: Vec<HashMap<String, String>> = vec![HashMap::new()]; // NOTE: change this
+            result.push(file_metadata);
+        }
 
-    return Ok((build_message, hashed_distributed_assets));
+        return result;
+    });
+
+    return Ok((build_message, output_metadata));
 }
 
 fn reset_output_folder(output_directory: &str) -> Result<(), Box<dyn Error>> {
     fs::remove_dir_all(output_directory).unwrap_or_else(|_| {});
-    // fs::create_dir_all(format!("{}/assets", output_directory).as_str())?;
 
     return Ok(fs::create_dir_all(format!("{}/assets", output_directory).as_str())?);
 }
@@ -178,10 +172,21 @@ fn safe_write_html_and_assets(
     return Ok(());
 }
 
-fn write_asset_map(project_root: &PathBuf, hashed_file_names: HashMap<&String, String>)
+fn build_file_map_with_asset_map<'a>(hashed_file_name_map: HashMap<&'a String, String>) -> Value {
+    let mut map = Map::new();
+
+    hashed_file_name_map.iter().for_each(|(key, value)| {
+        map.insert(key[1..].to_string(), Value::String(value[1..].to_string()));
+    });
+    map.insert("assets/assetMap.json".to_string(), Value::String("assets/assetMap.json".to_string()));
+
+    return Value::Object(map);
+}
+
+fn write_asset_map(project_root: &PathBuf, hashed_file_names: &Value)
     -> Result<(), Box<dyn Error>> {
     fs::write(format!("{}/dist/assets/assetMap.json", project_root.display()), serde_json::to_string_pretty(&json!({
-        "assets": "", // TODO: Object.assign(hashedAssetMap, { 'assets/assetMap.json': 'assets/assetMap.json' }),
+        "assets": hashed_file_names,
         "prepend": ""
     })).unwrap())?;
 
@@ -226,7 +231,7 @@ mod tests {
     fn build_dist_folder_works() -> Result<(), Box<dyn Error>> {
         let (actual_current_directory, output_directory, project_directory) = setup_test()?;
 
-        assert_eq!(fs::metadata(output_directory).is_ok(), false);
+        assert_eq!(fs::metadata(&output_directory).is_ok(), false);
 
         let config = Config::build(
             json!({ "environment": "development", "modulePrefix": "frontend" }),
