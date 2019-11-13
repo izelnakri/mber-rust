@@ -4,7 +4,6 @@ use std::fs;
 use std::collections::HashMap;
 use mustache;
 use mustache::MapBuilder;
-use yansi::Paint;
 use super::super::types::Config;
 
 pub fn build(html_path: &str, config: &Config) -> Result<String, Box<dyn Error>> {
@@ -66,10 +65,11 @@ fn transpile_mustache_template(template_path: &str, index_html_injections: &Hash
 #[cfg(test)]
 mod tests {
     use std::env;
-    use super::*;
     use std::path::PathBuf;
-    use serde_json::json;
     use std::collections::HashMap;
+    use serde_json::json;
+    use yansi::Paint;
+    use super::*;
     use super::super::super::types::BuildCache;
 
     fn setup_test() -> Result<(PathBuf, String), Box<dyn Error>> {

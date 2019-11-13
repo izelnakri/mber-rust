@@ -122,7 +122,7 @@ mod tests {
             BuildCache::new()
         );
 
-        fs::create_dir_all(&output_directory);
+        fs::create_dir_all(&output_directory)?;
 
         assert!(!fs::metadata(&application_js_output_path).is_ok());
         assert!(!fs::metadata(&vendor_js_output_path).is_ok());
