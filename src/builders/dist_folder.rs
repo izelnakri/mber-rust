@@ -5,13 +5,11 @@ use std::error::Error;
 use std::path::PathBuf;
 use yansi::Paint;
 use md5;
-use fs_extra;
-use fs_extra::dir;
 use serde_json;
 use serde_json::{Map, json, Value};
 use select::document::Document;
 use super::{index_html, fastboot_package_json};
-use super::super::utils::{console, file, html_file};
+use super::super::utils::{console, file, html_file, project};
 use super::super::types::Config;
 
 pub fn build(config: &Config) -> Result<(String, Vec<Value>), Box<dyn Error>> {
@@ -65,7 +63,7 @@ pub fn build(config: &Config) -> Result<(String, Vec<Value>), Box<dyn Error>> {
     });
     let hashed_file_name_map = build_hashed_filename_map(&target_asset_map);
 
-    fs_extra::copy_items(&vec![format!("{}/public", &project_root)], &output_directory, &dir::CopyOptions::new())?;
+    project::recursively_copy_folder(format!("{}/public", &project_root), &output_directory)?;
     safe_write_html_and_assets(&output_directory, build_html_paths, &hashed_file_name_map, &target_asset_map)?;
 
     let target_map_json = build_file_map_with_asset_map(hashed_file_name_map);
@@ -277,29 +275,18 @@ mod tests {
 
             return !target_file_name.contains("tests") && !target_file_name.contains("test-support");
         });
-        // let output_html = fs::read_to_string("dist/index.html")?;
+        let output_html = fs::read_to_string("dist/index.html")?;
 
         // target_index_html_assets.for_each(|file_name| {
         //     println!("{}", output_html);
-        //     let target_reference = file_name.to_str().unwrap().to_string().replace("./", "").replace("dist/", "/");
+        //     let target_reference = file_name.to_str().unwrap().to_string().replace("tmp/", "/").replace("./", "").replace("dist/", "/");
+        //     println!("{}", &target_reference);
 
         //     assert!(&output_html.contains(&target_reference));
         // });
 
         // let target_file_names =
         // let index_html_assets =
-        // t.true(!(await fs.exists(`${PROJECT_ROOT}/dist`)));
-
-        // const ENV = environmentFunc('development');
-
-      // const files = await buildDistFolder({
-      //   applicationName: 'some-app',
-      //   ENV: ENV
-      // });
-      // const timePassed = timer.stop();
-
-      // t.true(files.length === 8);
-      // t.true(timePassed < TIME_TO_BUILD_DIST_THRESHOLD);
 
       // const fileNames = files.reduce((result, file) => {
       //   if (!file.fileName.includes('documentation')) {
@@ -309,14 +296,6 @@ mod tests {
       //   return result;
       // }, []);
       // const outputHTML = (await fs.readFile(INDEX_HTML_OUTPUT_PATH)).toString();
-      // const fileContents = await Promise.all([
-      //   fs.readFile(`${PROJECT_ROOT}/tmp/assets/application.css`),
-      //   fs.readFile(`${PROJECT_ROOT}/tmp/assets/test-support.css`),
-      //   fs.readFile(`${PROJECT_ROOT}/tmp/assets/application.js`),
-      //   fs.readFile(`${PROJECT_ROOT}/tmp/assets/vendor.js`),
-      //   fs.readFile(`${PROJECT_ROOT}/tmp/assets/test-support.js`),
-      //   fs.readFile(`${PROJECT_ROOT}/tmp/assets/tests.js`)
-      // ]);
       // const targetIndexHTMLAssets = fileNames
       //   .filter((fileName) => {
       //     return !fileName.includes('tests') && !fileName.includes('test-support');
@@ -379,18 +358,3 @@ mod tests {
     // fn build_resets_dist() {
     // }
 }
-
-// fn copy_public_folder(project_root: &str) -> Result<(), Box<dyn Error>> {
-//     let walker = WalkDir::new(directory_string).into_iter().filter_entry(filter_function);
-
-//     for entry in walker {
-//         let entry = entry.expect("ENTRY NOT FOUND");
-
-//         match entry.file_type().is_dir() {
-//             true => check_and_set_directory_map_to_map(&mut file_system_map, entry.path().display()),
-//             false => find_directory_map_and_insert_file(&mut file_system_map, entry.path().display())
-//         }
-//     }
-
-//     return Ok(());
-// }
