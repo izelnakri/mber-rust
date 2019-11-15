@@ -210,6 +210,13 @@ mod tests {
 
     const TIME_TO_BUILD_DIST_THRESHOLD: u128 = 4000;
 
+    fn get_file_key(json_value: &Value, key: &str) -> String {
+        match &json_value.get(key) {
+            Some(value) => format!("/{}", value.as_str().unwrap_or("")),
+            None => String::new()
+        }
+    }
+
     fn setup_test() -> Result<(PathBuf, String, String), Box<dyn Error>> {
         let current_directory = env::current_dir()?;
         let project_directory = format!("{}/ember-app-boilerplate", current_directory.to_string_lossy());
@@ -247,9 +254,9 @@ mod tests {
         build_all_assets(&config)?;
 
         let build_start = Instant::now();
-        let (message, created_files) = build(&config)?;
+        let (message, build_metadata_output) = build(&config)?;
         let time_passed = build_start.elapsed().as_millis();
-        let file_names: Vec<PathBuf> = fs::read_dir("tmp/assets")?.fold(Vec::new(), |mut result, entry| {
+        let file_names: Vec<PathBuf> = fs::read_dir("dist/assets")?.fold(Vec::new(), |mut result, entry| {
             let dir_entry = entry.unwrap();
 
             if dir_entry.metadata().unwrap().is_file() {
@@ -260,8 +267,28 @@ mod tests {
         });
 
         assert!(time_passed < TIME_TO_BUILD_DIST_THRESHOLD);
-        assert!(file_names.len() == 6);
+        assert!(file_names.len() == 7);
 
+        let target_index_html_assets = file_names.iter().filter(|file_name| {
+            let target_file_name = file_name.to_str().unwrap().to_string();
+
+            return !target_file_name.contains("tests") && !target_file_name.contains("test-support");
+        });
+        let output_html = fs::read_to_string("dist/index.html")?;
+        let output_test_html = fs::read_to_string("dist/tests.html")?;
+        let dist_file_assets = target_index_html_assets.fold(Vec::new(), |mut result, file_name| {
+            let file_path = file_name.to_str().unwrap().to_string();
+            let target_reference = file_path.replace("./", "").replace("dist/", "/");
+
+            if target_reference != "/assets/assetMap.json" {
+                assert!(&output_html.contains(&target_reference));
+                assert!(&output_test_html.contains(&target_reference));
+
+                result.push(file_path);
+            }
+
+            return result;
+        });
         let file_contents = [
             fs::read_to_string("tmp/assets/vendor.js")?,
             fs::read_to_string("tmp/assets/application.css")?,
@@ -270,76 +297,42 @@ mod tests {
             fs::read_to_string("tmp/assets/test-support.js")?,
             fs::read_to_string("tmp/assets/tests.js")?
         ];
-        let target_index_html_assets = file_names.iter().filter(|file_name| {
-            let target_file_name = file_name.to_str().unwrap().to_string();
 
-            return !target_file_name.contains("tests") && !target_file_name.contains("test-support");
+        dist_file_assets.iter().for_each(|dist_file| {
+            assert!(file_contents.contains(&fs::read_to_string(dist_file).unwrap()));
         });
-        let output_html = fs::read_to_string("dist/index.html")?;
+        build_metadata_output.iter().for_each(|(file)| {
+            let file_size = file["size"].as_u64().unwrap();
 
-        // target_index_html_assets.for_each(|file_name| {
-        //     println!("{}", output_html);
-        //     let target_reference = file_name.to_str().unwrap().to_string().replace("tmp/", "/").replace("./", "").replace("dist/", "/");
-        //     println!("{}", &target_reference);
+            assert!(file_size > 0);
 
-        //     assert!(&output_html.contains(&target_reference));
-        // });
+            if file_size > 1000 {
+                assert!(file["gzip_size"].as_u64().unwrap() < file_size);
+            }
+        });
 
-        // let target_file_names =
-        // let index_html_assets =
+        assert!(fs::metadata("dist/package.json").is_ok());
 
-      // const fileNames = files.reduce((result, file) => {
-      //   if (!file.fileName.includes('documentation')) {
-      //     result.push(file.fileName);
-      //   }
+        let asset_map: Value = serde_json::from_str(fs::read_to_string("dist/assets/assetMap.json")?.as_str())?;
 
-      //   return result;
-      // }, []);
-      // const outputHTML = (await fs.readFile(INDEX_HTML_OUTPUT_PATH)).toString();
-      // const targetIndexHTMLAssets = fileNames
-      //   .filter((fileName) => {
-      //     return !fileName.includes('tests') && !fileName.includes('test-support');
-      //   });
+        assert_eq!(asset_map["prepend"], Value::String("".to_string()));
+        assert_eq!(asset_map["assets"].as_object().unwrap().len(), 7);
+        assert_eq!(asset_map["assets"]["assets/assetMap.json"], Value::String("assets/assetMap.json".to_string()));
 
-      // await Promise.all(targetIndexHTMLAssets.map((fileName) => {
-      //   const targetFileName = fileName.replace('./', '');
+        let mut dist_files: Vec<String> = file_names.iter()
+            .map(|dist_file| dist_file.to_str().unwrap().to_string().replace("./", "").replace("dist/", "/"))
+            .collect();
+        let target_assets = &asset_map["assets"];
 
-      //   t.true(outputHTML.includes(targetFileName.replace('dist/', '/')));
-      // }));
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/application.css")));
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/application.js")));
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/vendor.js")));
+        assert!(!&dist_files.contains(&get_file_key(target_assets, "assets/memserver.js")));
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/test-support.js")));
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/test-support.css")));
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/tests.js")));
 
-      // const testHTML = (await fs.readFile(TEST_HTML_OUTPUT_PATH)).toString();
-      // const testFileAssetContents = await Promise.all(fileNames.map((fileName) => {
-      //   const targetFileName = fileName.replace('./', '');
-
-      //   t.true(testHTML.includes(targetFileName.replace('dist/', '/')));
-
-      //   return fs.readFile(`${PROJECT_ROOT}/${targetFileName}`);
-      // }));
-
-      // testFileAssetContents.forEach((hashedFileContent) => {
-      //   t.truthy(fileContents.find((fileContent) => fileContent.length === hashedFileContent.length));
-      // });
-      // files.forEach((file) => {
-      //   t.truthy(!INITIAL_BUILD_FILES.find((fileName) => file.fileName.endsWith(fileName)));
-      //   t.true((file.gzipSize > 0) && (file.gzipSize < file.size));
-      // });
-
-      // t.true(await fs.exists(`${PROJECT_ROOT}/dist/package.json`));
-
-      // const assetMap = JSON.parse(await fs.readFile(`${PROJECT_ROOT}/dist/assets/assetMap.json`));
-
-      // t.true(assetMap.prepend === '');
-      // t.true(Object.keys(assetMap.assets).length === 9);
-      // t.true(assetMap.assets['assets/assetMap.json'] === 'assets/assetMap.json');
-
-      // const targetFileNames = fileNames.map((fileName) => fileName.replace('./dist/', ''));
-
-      // t.truthy(targetFileNames.find((fileName) => fileName === assetMap.assets['assets/application.css']))
-      // t.truthy(targetFileNames.find((fileName) => fileName === assetMap.assets['assets/application.js']))
-      // t.truthy(targetFileNames.find((fileName) => fileName === assetMap.assets['assets/test-support.js']))
-      // t.truthy(targetFileNames.find((fileName) => fileName === assetMap.assets['assets/test-support.css']))
-      // t.truthy(targetFileNames.find((fileName) => fileName === assetMap.assets['assets/tests.js']))
-      return finalize_test(actual_current_directory);
+        return finalize_test(actual_current_directory);
     }
 
     // #[test]
