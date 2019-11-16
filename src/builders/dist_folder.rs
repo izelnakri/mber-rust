@@ -8,10 +8,11 @@ use md5;
 use serde_json;
 use serde_json::{Map, json, Value};
 use select::document::Document;
-use super::{index_html, fastboot_package_json};
+use super::{fastboot_package_json};
 use super::super::utils::{console, file, html_file, project};
 use super::super::types::Config;
 
+// TODO: where is the documentation?? Add it here? Or at least test it
 pub fn build(config: &Config) -> Result<(String, Vec<Value>), Box<dyn Error>> {
     console::log(format!("{} {}...", Paint::yellow("BUNDLING:"), config.application_name));
 
@@ -25,18 +26,18 @@ pub fn build(config: &Config) -> Result<(String, Vec<Value>), Box<dyn Error>> {
     reset_output_folder(&output_directory.as_str())?;
 
     let mut build_files: Vec<String> = Vec::new();
-    let index_html_path_tuple = (format!("{}/index.html", &project_root), format!("{}/dist/index.html", &project_root));
+    let index_html_path_tuple = (format!("{}/tmp/index.html", &project_root), format!("{}/dist/index.html", &project_root));
 
-    build_files.extend(get_build_files_from_html(&index_html_path_tuple.0.as_str(), &config, false)?);
+    build_files.extend(get_build_files_from_html(&index_html_path_tuple.0.as_str())?);
 
     let mut build_html_paths = vec![index_html_path_tuple];
 
     if should_build_tests {
         let tests_html_path_tuple = (
-            format!("{}/tests/index.html", &project_root), format!("{}/dist/tests.html", &project_root)
+            format!("{}/tmp/tests.html", &project_root), format!("{}/dist/tests.html", &project_root)
         );
 
-        build_files.extend(get_build_files_from_html(&tests_html_path_tuple.0.as_str(), &config, false)?);
+        build_files.extend(get_build_files_from_html(&tests_html_path_tuple.0.as_str())?);
         build_html_paths.push(tests_html_path_tuple);
     }
 
@@ -47,7 +48,7 @@ pub fn build(config: &Config) -> Result<(String, Vec<Value>), Box<dyn Error>> {
             format!("{}/dist{}.html", &project_root, documentation_path_in_config)
         );
 
-        build_files.extend(get_build_files_from_html(&documentation_html_path_tuple.0.as_str(), &config, true)?);
+        build_files.extend(get_build_files_from_html(&documentation_html_path_tuple.0.as_str())?);
         build_html_paths.push(documentation_html_path_tuple);
     }
 
@@ -122,12 +123,8 @@ fn reset_output_folder(output_directory: &str) -> Result<(), Box<dyn Error>> {
     return Ok(fs::create_dir_all(format!("{}/assets", output_directory).as_str())?);
 }
 
-fn get_build_files_from_html(html_path: &str, config: &Config, is_documentation: bool)
-    -> Result<Vec<String>, Box<dyn Error>> {
-    let html = match is_documentation {
-        true => index_html::build_documentation_html(&html_path, &config)?,
-        false => index_html::build(&html_path, &config)?
-    };
+fn get_build_files_from_html(html_path: &str) -> Result<Vec<String>, Box<dyn Error>> {
+    let html = fs::read_to_string(&html_path)?;
     let html_document = Document::from(html.as_str());
     let (html_js_files, html_css_files) = html_file::find_internal_assets_from_html(&html_document);
 
@@ -335,19 +332,201 @@ mod tests {
         return finalize_test(actual_current_directory);
     }
 
+    #[test]
+    fn build_works_for_different_application_with_memserver_mode() -> Result<(), Box<dyn Error>> {
+        let (actual_current_directory, output_directory, project_directory) = setup_test()?;
+
+        assert_eq!(fs::metadata(&output_directory).is_ok(), false);
+
+        let config = Config::build(
+            json!({ "environment": "development", "modulePrefix": "my-app", "memserver": { "enabled": true } }),
+            HashMap::new(),
+            BuildCache::new()
+        ); // NOTE: testing: true must be there
+
+        build_all_assets(&config)?;
+
+        let build_start = Instant::now();
+        let (message, build_metadata_output) = build(&config)?;
+        let time_passed = build_start.elapsed().as_millis();
+        let file_names: Vec<PathBuf> = fs::read_dir("dist/assets")?.fold(Vec::new(), |mut result, entry| {
+            let dir_entry = entry.unwrap();
+
+            if dir_entry.metadata().unwrap().is_file() {
+                result.push(dir_entry.path());
+            }
+
+            return result;
+        });
+
+        assert!(time_passed < TIME_TO_BUILD_DIST_THRESHOLD);
+        assert!(file_names.len() == 8);
+
+        let target_index_html_assets = file_names.iter().filter(|file_name| {
+            let target_file_name = file_name.to_str().unwrap().to_string();
+
+            return !target_file_name.contains("tests") && !target_file_name.contains("test-support");
+        });
+        let output_html = fs::read_to_string("dist/index.html")?;
+        let output_test_html = fs::read_to_string("dist/tests.html")?;
+        let dist_file_assets = target_index_html_assets.fold(Vec::new(), |mut result, file_name| {
+            let file_path = file_name.to_str().unwrap().to_string();
+            let target_reference = file_path.replace("./", "").replace("dist/", "/");
+
+            if target_reference != "/assets/assetMap.json" {
+                assert!(&output_html.contains(&target_reference));
+                assert!(&output_test_html.contains(&target_reference));
+
+                result.push(file_path);
+            }
+
+            return result;
+        });
+        let file_contents = [
+            fs::read_to_string("tmp/assets/application.css")?,
+            fs::read_to_string("tmp/assets/application.js")?,
+            fs::read_to_string("tmp/assets/memserver.js")?,
+            fs::read_to_string("tmp/assets/test-support.css")?,
+            fs::read_to_string("tmp/assets/test-support.js")?,
+            fs::read_to_string("tmp/assets/tests.js")?,
+            fs::read_to_string("tmp/assets/vendor.js")?
+        ];
+
+        dist_file_assets.iter().for_each(|dist_file| {
+            assert!(file_contents.contains(&fs::read_to_string(dist_file).unwrap()));
+        });
+        build_metadata_output.iter().for_each(|(file)| {
+            let file_size = file["size"].as_u64().unwrap();
+
+            assert!(file_size > 0);
+
+            if file_size > 1000 {
+                assert!(file["gzip_size"].as_u64().unwrap() < file_size);
+            }
+        });
+
+        assert!(fs::metadata("dist/package.json").is_ok());
+
+        let asset_map: Value = serde_json::from_str(fs::read_to_string("dist/assets/assetMap.json")?.as_str())?;
+
+        assert_eq!(asset_map["prepend"], Value::String("".to_string()));
+        assert_eq!(asset_map["assets"].as_object().unwrap().len(), 8);
+        assert_eq!(asset_map["assets"]["assets/assetMap.json"], Value::String("assets/assetMap.json".to_string()));
+
+        let mut dist_files: Vec<String> = file_names.iter()
+            .map(|dist_file| dist_file.to_str().unwrap().to_string().replace("./", "").replace("dist/", "/"))
+            .collect();
+        let target_assets = &asset_map["assets"];
+
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/application.css")));
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/application.js")));
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/vendor.js")));
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/memserver.js")));
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/test-support.js")));
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/test-support.css")));
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/tests.js")));
+
+        return finalize_test(actual_current_directory);
+    }
+
+    #[test]
+    fn build_works_for_production() -> Result<(), Box<dyn Error>> {
+        let (actual_current_directory, output_directory, project_directory) = setup_test()?;
+
+        assert_eq!(fs::metadata(&output_directory).is_ok(), false);
+
+        let config = Config::build(
+            json!({ "environment": "production", "modulePrefix": "my-app", "memserver": { "enabled": true } }),
+            HashMap::new(),
+            BuildCache::new()
+        ); // NOTE: testing: true must be there
+
+        build_all_assets(&config)?;
+
+        let build_start = Instant::now();
+        let (message, build_metadata_output) = build(&config)?;
+        let time_passed = build_start.elapsed().as_millis();
+        let file_names: Vec<PathBuf> = fs::read_dir("dist/assets")?.fold(Vec::new(), |mut result, entry| {
+            let dir_entry = entry.unwrap();
+
+            if dir_entry.metadata().unwrap().is_file() {
+                result.push(dir_entry.path());
+            }
+
+            return result;
+        });
+
+        assert!(time_passed < TIME_TO_BUILD_DIST_THRESHOLD);
+        assert!(file_names.len() == 3);
+
+        let target_index_html_assets = file_names.iter().filter(|file_name| {
+            let target_file_name = file_name.to_str().unwrap().to_string();
+
+            return !target_file_name.contains("tests") && !target_file_name.contains("test-support");
+        });
+        let output_html = fs::read_to_string("dist/index.html")?;
+        let output_test_html = fs::read_to_string("dist/tests.html")?;
+        let dist_file_assets = target_index_html_assets.fold(Vec::new(), |mut result, file_name| {
+            let file_path = file_name.to_str().unwrap().to_string();
+            let target_reference = file_path.replace("./", "").replace("dist/", "/");
+
+            if target_reference != "/assets/assetMap.json" {
+                assert!(&output_html.contains(&target_reference));
+                assert!(&output_test_html.contains(&target_reference));
+
+                result.push(file_path);
+            }
+
+            return result;
+        });
+        let file_contents = [
+            fs::read_to_string("tmp/assets/application.css")?,
+            fs::read_to_string("tmp/assets/application.js")?,
+            fs::read_to_string("tmp/assets/vendor.js")?
+        ];
+
+        dist_file_assets.iter().for_each(|dist_file| {
+            assert!(file_contents.contains(&fs::read_to_string(dist_file).unwrap()));
+        });
+        build_metadata_output.iter().for_each(|(file)| {
+            let file_size = file["size"].as_u64().unwrap();
+
+            assert!(file_size > 0);
+
+            if file_size > 1000 {
+                assert!(file["gzip_size"].as_u64().unwrap() < file_size);
+            }
+        });
+
+        assert!(fs::metadata("dist/package.json").is_ok());
+
+        let asset_map: Value = serde_json::from_str(fs::read_to_string("dist/assets/assetMap.json")?.as_str())?;
+
+        assert_eq!(asset_map["prepend"], Value::String("".to_string()));
+        assert_eq!(asset_map["assets"].as_object().unwrap().len(), 3);
+        assert_eq!(asset_map["assets"]["assets/assetMap.json"], Value::String("assets/assetMap.json".to_string()));
+
+        let mut dist_files: Vec<String> = file_names.iter()
+            .map(|dist_file| dist_file.to_str().unwrap().to_string().replace("./", "").replace("dist/", "/"))
+            .collect();
+        let target_assets = &asset_map["assets"];
+
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/application.css")));
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/application.js")));
+        assert!(&dist_files.contains(&get_file_key(target_assets, "assets/vendor.js")));
+        assert!(!&dist_files.contains(&get_file_key(target_assets, "assets/memserver.js")));
+        assert!(!&dist_files.contains(&get_file_key(target_assets, "assets/test-support.js")));
+        assert!(!&dist_files.contains(&get_file_key(target_assets, "assets/test-support.css")));
+        assert!(!&dist_files.contains(&get_file_key(target_assets, "assets/tests.js")));
+
+        return finalize_test(actual_current_directory);
+    }
+
     // #[test]
-    // fn build_works_for_different_application_with_memserver_mode() {
+    // fn build_works_for_different_application_with_memserver_mode_and_fastboot_false() -> Result<(), Box<dyn Error>> {
     // }
 
     // #[test]
-    // fn build_works_for_production() {
-    // }
-
-    // #[test]
-    // fn build_works_for_different_application_with_memserver_mode_and_fastboot_false() {
-    // }
-
-    // #[test]
-    // fn build_resets_dist() {
+    // fn build_resets_dist() -> Result<(), Box<dyn Error>> {
     // }
 }

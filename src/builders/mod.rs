@@ -51,13 +51,13 @@ pub fn build_all_assets(config: &Config) -> Result<(), Box<dyn Error>> {
         documentation_js::build(&config, false)?; // NOTE: enable linting in future
         documentation_css::build(&config)?;
 
-        let test_index_path = format!("{}/tests/index.html", &project_root);
-
-        index_html::build_documentation_html(test_index_path.as_str(), &config)?;
+        index_html::build_documentation_html(index_html_path.as_str(), &config)?;
     }
 
     if config.cli_arguments.testing {
-        index_html::build(&index_html_path, &config)?;
+        let test_index_path = format!("{}/tests/index.html", &project_root);
+
+        index_html::build(test_index_path.as_str(), &config)?;
 
         test_files::build(&config, false)?; // NOTE: enable linting in future
         fs::write(format!("{}/tmp/assets/test-support.css", &project_root), include_str!("../../_vendor/test-support.css"))?;
