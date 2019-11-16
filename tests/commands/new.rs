@@ -64,7 +64,6 @@ fn new_command_gives_error_when_app_exists() -> io::Result<()> {
         "public",
         "src",
         "tests",
-        "tmp",
         "vendor",
     ]
     .iter()
@@ -101,7 +100,6 @@ fn new_command_gives_error_when_app_exists() -> io::Result<()> {
         "public",
         "src",
         "tests",
-        "tmp",
         "vendor",
     ]
     .iter()

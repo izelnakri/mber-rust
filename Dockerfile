@@ -13,4 +13,6 @@ ADD src /code/src
 ADD tests /code/tests
 ADD . /code/
 
+RUN cargo build
+
 ENTRYPOINT "/bin/bash"
