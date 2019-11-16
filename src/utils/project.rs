@@ -146,9 +146,9 @@ mod tests {
             return target_path.to_str().unwrap().to_string();
         }).collect::<Vec<String>>();
 
-        assert_eq!(test_tmp_dir_entries, vec![
+        vec![
             "test-tmp/crossdomain.xml", "test-tmp/favicon.ico", "test-tmp/images", "test-tmp/robots.txt"
-        ]);
+        ].into_iter().for_each(|path| assert_eq!(test_tmp_dir_entries.contains(&path.to_string()), true));
 
         let mut folder_entries = WalkDir::new("ember-app-boilerplate/public").into_iter();
         let tmp_entries = WalkDir::new("test-tmp").into_iter()

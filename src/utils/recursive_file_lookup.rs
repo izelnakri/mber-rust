@@ -6,7 +6,7 @@ pub fn lookup_for_extensions(directory: &Path, extensions: Vec<&str>) -> Vec<Pat
     return WalkDir::new(directory).into_iter().filter_map(|e| {
         let entry = e.unwrap();
 
-        return match extensions.iter().any(|extension| entry.file_name().to_str().unwrap().ends_with(extension)) {
+        return match &extensions.iter().any(|extension| entry.file_name().to_str().unwrap().ends_with(extension)) {
             true => Some(entry.into_path()),
             false => None
         };
@@ -62,53 +62,46 @@ mod tests {
         let online_shop_directory = Path::new("online-shop");
         let shoes_directory = Path::new("online-shop/shoes");
         let shoe_directory = Path::new("online-shop/shoes/shoe");
-        let online_shop_js_files = lookup_for_extensions(online_shop_directory, vec!["js"]);
-        let online_shop_hbs_files = lookup_for_extensions(online_shop_directory, vec!["hbs"]);
-        let online_shop_files = lookup_for_extensions(online_shop_directory, vec!["hbs", "js"]);
-        let shoes_js_files = lookup_for_extensions(shoes_directory, vec!["js"]);
-        let shoes_hbs_files = lookup_for_extensions(shoes_directory, vec!["hbs"]);
-        let shoes_files = lookup_for_extensions(shoes_directory, vec!["js", "hbs"]);
-        let shoe_files = lookup_for_extensions(shoe_directory, vec!["js", "hbs"]);
+        let online_shop_js_files: Vec<String> = lookup_for_extensions(&online_shop_directory, vec!["js"])
+            .into_iter().map(|x| x.to_str().unwrap().to_string()).collect();
+        let online_shop_hbs_files: Vec<String> = lookup_for_extensions(&online_shop_directory, vec!["hbs"])
+            .into_iter().map(|x| x.to_str().unwrap().to_string()).collect();
+        let online_shop_files: Vec<String> = lookup_for_extensions(&online_shop_directory, vec!["hbs", "js"])
+            .into_iter().map(|x| x.to_str().unwrap().to_string()).collect();
+        let shoes_js_files: Vec<String> = lookup_for_extensions(&shoes_directory, vec!["js"])
+            .into_iter().map(|x| x.to_str().unwrap().to_string()).collect();
+        let shoes_hbs_files: Vec<String> = lookup_for_extensions(&shoes_directory, vec!["hbs"])
+            .into_iter().map(|x| x.to_str().unwrap().to_string()).collect();
+        let shoes_files: Vec<String> = lookup_for_extensions(&shoes_directory, vec!["js", "hbs"])
+            .into_iter().map(|x| x.to_str().unwrap().to_string()).collect();
+        let shoe_files: Vec<String> = lookup_for_extensions(&shoe_directory, vec!["js", "hbs"])
+            .into_iter().map(|x| x.to_str().unwrap().to_string()).collect();
+
+        vec![
+            "online-shop/shoes/shoe/brown.js", "online-shop/shoes/shoe.js", "online-shop/shoes/index.js",
+            "online-shop/shoes/brown.js", "online-shop/index.js", "online-shop/details.js"
+        ].iter_mut().for_each(|path| assert_eq!(online_shop_js_files.contains(&path.to_string()), true));
+        vec!["online-shop/shoes/brown.hbs", "online-shop/details.hbs"]
+            .iter_mut().for_each(|path| assert_eq!(online_shop_hbs_files.contains(&path.to_string()), true));
+        vec![
+            "online-shop/shoes/shoe/brown.js", "online-shop/shoes/shoe.js", "online-shop/shoes/index.js",
+            "online-shop/shoes/brown.js", "online-shop/shoes/brown.hbs", "online-shop/index.js",
+            "online-shop/details.js", "online-shop/details.hbs"
+        ].iter_mut().for_each(|path| assert_eq!(online_shop_files.contains(&path.to_string()), true));
+        vec![
+            "online-shop/shoes/shoe/brown.js", "online-shop/shoes/shoe.js", "online-shop/shoes/index.js",
+            "online-shop/shoes/brown.js"
+        ].iter_mut().for_each(|path| assert_eq!(shoes_js_files.contains(&path.to_string()), true));
+
+        assert_eq!(shoes_hbs_files, vec!["online-shop/shoes/brown.hbs"]);
+
+        vec![
+            "online-shop/shoes/shoe/brown.js", "online-shop/shoes/shoe.js", "online-shop/shoes/index.js",
+            "online-shop/shoes/brown.js", "online-shop/shoes/brown.hbs"
+        ].iter_mut().for_each(|path| assert_eq!(shoes_files.contains(&path.to_string()), true));
 
         assert_eq!(
-            online_shop_js_files.iter().map(|x| x.to_str().unwrap()).collect::<Vec<&str>>(),
-            vec![
-                "online-shop/shoes/shoe/brown.js", "online-shop/shoes/shoe.js", "online-shop/shoes/index.js",
-                "online-shop/shoes/brown.js", "online-shop/index.js", "online-shop/details.js"
-            ]
-        );
-        assert_eq!(
-            online_shop_hbs_files.iter().map(|x| x.to_str().unwrap()).collect::<Vec<&str>>(),
-            vec!["online-shop/shoes/brown.hbs", "online-shop/details.hbs"]
-        );
-        assert_eq!(
-            online_shop_files.iter().map(|x| x.to_str().unwrap()).collect::<Vec<&str>>(),
-            vec![
-                "online-shop/shoes/shoe/brown.js", "online-shop/shoes/shoe.js", "online-shop/shoes/index.js",
-                "online-shop/shoes/brown.js", "online-shop/shoes/brown.hbs", "online-shop/index.js",
-                "online-shop/details.js", "online-shop/details.hbs"
-            ]
-        );
-        assert_eq!(
-            shoes_js_files.iter().map(|x| x.to_str().unwrap()).collect::<Vec<&str>>(),
-            vec![
-                "online-shop/shoes/shoe/brown.js", "online-shop/shoes/shoe.js", "online-shop/shoes/index.js",
-                "online-shop/shoes/brown.js"
-            ]
-        );
-        assert_eq!(
-            shoes_hbs_files.iter().map(|x| x.to_str().unwrap()).collect::<Vec<&str>>(),
-            vec!["online-shop/shoes/brown.hbs"]
-        );
-        assert_eq!(
-            shoes_files.iter().map(|x| x.to_str().unwrap()).collect::<Vec<&str>>(),
-            vec![
-                "online-shop/shoes/shoe/brown.js", "online-shop/shoes/shoe.js", "online-shop/shoes/index.js",
-                "online-shop/shoes/brown.js", "online-shop/shoes/brown.hbs"
-            ]
-        );
-        assert_eq!(
-            shoe_files.iter().map(|x| x.to_str().unwrap()).collect::<Vec<&str>>(),
+            shoe_files,
             vec!["online-shop/shoes/shoe/brown.js"]
         );
 
