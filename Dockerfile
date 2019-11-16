@@ -1,7 +1,6 @@
-FROM rust:1.37.0-slim
+FROM archlinux
 
-RUN apt-get update && \
-  apt-get install -y vim
+RUN pacman --noconfirm -Sy vim git rust gcc libsass make
 
 WORKDIR /code/
 
@@ -13,7 +12,5 @@ ADD Cargo.toml /code/Cargo.toml
 ADD src /code/src
 ADD tests /code/tests
 ADD . /code/
-
-RUN cargo build
 
 ENTRYPOINT "/bin/bash"
