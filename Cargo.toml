@@ -17,7 +17,7 @@ circle-ci = { repository = "izelnakri/mber-rust", branch = "master" }
 yansi = "0.5.0"
 walkdir = "2.2.9"
 Inflector = "0.11.4"
-hyper = "0.12.34"
+hyper = "0.14.10"
 serde = { version = "1.0.100", features = ["derive"] }
 serde_json = "1.0.40"
 mustache = "0.9.0"
